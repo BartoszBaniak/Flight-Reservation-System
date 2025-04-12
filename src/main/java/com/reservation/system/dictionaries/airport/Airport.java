@@ -1,14 +1,14 @@
 package com.reservation.system.dictionaries.airport;
 
 public enum Airport {
-    WARSAW_CHOPIN,       // WAW
-    KRAKOW_BALICE,       // KRK
-    GDANSK_LECH_WALESA,  // GDN
-    LONDON_HEATHROW,         // LHR
-    PARIS_CHARLES_DE_GAULLE, // CDG
-    FRANKFURT_MAIN,          // FRA
-    AMSTERDAM_SCHIPHOL,      // AMS
-    DUBAI_INTERNATIONAL,     // DXB
-    NEW_YORK_JFK,            // JFK
-    SINGAPORE_CHANGI         // SIN
+    WAW, //WARSAW_CHOPIN,       // WAW
+    KRK, //KRAKOW_BALICE,       // KRK
+    GDN, //GDANSK_LECH_WALESA,  // GDN
+    LHR, //LONDON_HEATHROW,         // LHR
+    CDG, //PARIS_CHARLES_DE_GAULLE, // CDG
+    FRA, //FRANKFURT_MAIN,          // FRA
+    AMS, //AMSTERDAM_SCHIPHOL,      // AMS
+    DXB, //DUBAI_INTERNATIONAL,     // DXB
+    JFK, //NEW_YORK_JFK,            // JFK
+    SIN, //SINGAPORE_CHANGI         // SIN
 }
