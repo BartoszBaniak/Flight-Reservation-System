@@ -11,9 +11,9 @@ import java.time.LocalTime;
 @Repository
 public interface FlightRepository extends JpaRepository<FlightEntity, Integer> {
     Optional<FlightEntity> findByFlightNumber(FlightNumber flightNumber);
-    boolean existsByFlightNumberAndFlightDateAndFlightTime(
+    boolean existsByFlightNumberAndFlightDateAndFlightDepartureTime(
             FlightNumber flightNumber,
             LocalDate flightDate,
-            LocalTime flightTime
+            LocalTime flightDepartureTime
     );
 }

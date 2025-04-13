@@ -8,6 +8,7 @@ import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -19,10 +20,10 @@ public class FlightService {
 
     public ApiResponse<FlightCreateResponse> createFlight(FlightCreateRequest flightCreateRequest) {
 
-        if (flightRepository.existsByFlightNumberAndFlightDateAndFlightTime(
+        if (flightRepository.existsByFlightNumberAndFlightDateAndFlightDepartureTime(
                 flightCreateRequest.getFlightNumber(),
                 flightCreateRequest.getFlightDate(),
-                flightCreateRequest.getFlightTime())) {
+                flightCreateRequest.getFlightDepartureTime())) {
 
             FlightCreateResponse flightCreateResponse = new FlightCreateResponse(
                     null,
@@ -33,15 +34,25 @@ public class FlightService {
             return new ApiResponse<FlightCreateResponse>(LocalDateTime.now(), "Flight already exists", flightCreateResponse);
         }
 
-        FlightEntity flightEntity = new FlightEntity();
+        Duration duration = Duration.between(flightCreateRequest.getFlightDepartureTime(), flightCreateRequest.getFlightArrivalTime());
+        long durationInMinutes = duration.toMinutes();
+        int hours = (int) (durationInMinutes / 60);
+        int minutes = (int) (durationInMinutes % 60);
 
-        flightEntity.setFlightDeparture(flightCreateRequest.getFlightDeparture());
-        flightEntity.setFlightArrival(flightCreateRequest.getFlightArrival());
-        flightEntity.setFlightTime(flightCreateRequest.getFlightTime());
-        flightEntity.setFlightDate(flightCreateRequest.getFlightDate());
-        flightEntity.setFlightNumber(flightCreateRequest.getFlightNumber());
-        flightEntity.setFlightType(flightCreateRequest.getFlightType());
-        flightEntity.setFlightSeatsNumber(flightCreateRequest.getFlightSeatsNumber());
+        String flightDuration = String.format("%02d:%02d", hours, minutes);
+
+
+        FlightEntity flightEntity = new FlightEntity(
+                flightCreateRequest.getFlightDeparture(),
+                flightCreateRequest.getFlightArrival(),
+                flightCreateRequest.getFlightDepartureTime(),
+                flightCreateRequest.getFlightArrivalTime(),
+                flightDuration,
+                flightCreateRequest.getFlightDate(),
+                flightCreateRequest.getFlightNumber(),
+                flightCreateRequest.getFlightType(),
+                flightCreateRequest.getFlightSeatsNumber()
+        );
 
         FlightEntity savedFlight = flightRepository.save(flightEntity);
 
@@ -74,7 +85,8 @@ public class FlightService {
 
         existingFlight.setFlightDeparture(flightEntity.getFlightDeparture());
         existingFlight.setFlightArrival(flightEntity.getFlightArrival());
-        existingFlight.setFlightTime(flightEntity.getFlightTime());
+        existingFlight.setFlightDepartureTime(flightEntity.getFlightDepartureTime());
+        existingFlight.setFlightDuration(flightEntity.getFlightDuration());
         existingFlight.setFlightDate(flightEntity.getFlightDate());
         existingFlight.setFlightNumber(flightEntity.getFlightNumber());
         existingFlight.setFlightType(flightEntity.getFlightType());

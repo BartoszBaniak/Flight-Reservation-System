@@ -55,7 +55,7 @@ public class FlightController {
 
      */
 
-    //TODO dodawanie lotów - tworzenie nowego lotu
+    //TODO dodawanie lotów - tworzenie nowego lotu ------- powiedzmy ze jest
     //TODO modyfikacja lotów - zmiana godziny wylotu
     //TODO anulowanie (usuwanie) lotów
     //TODO odczytywanie danych lotów - informacja skąd dokąd, o której godzinie wylatuje
