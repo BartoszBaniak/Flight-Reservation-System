@@ -19,19 +19,19 @@ public class FlightController {
         return ResponseEntity.ok(flightService.createFlight(flightCreateRequest));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<FlightReadResponse> getFlightById(@PathVariable int id) {
-        return ResponseEntity.ok(flightService.getFlightById(id));
+    @GetMapping("/search")
+    public ResponseEntity<FlightReadResponse> getFlight(@RequestBody FlightReadDeleteRequest flightReadDeleteRequest) {
+        return ResponseEntity.ok(flightService.getFlight(flightReadDeleteRequest));
     }
 
-    @GetMapping("/all")
+    @GetMapping("/search-all")
     public ResponseEntity<List<FlightReadResponse>> getAllFlights() {
         return ResponseEntity.ok(flightService.getAllFlights());
     }
 
-    @DeleteMapping("/delete/{id}")
-    public ResponseEntity<FlightDeleteResponse> deleteFlight(@PathVariable int id) {
-        return ResponseEntity.ok(flightService.deleteFlight(id));
+    @DeleteMapping("/delete")
+    public ResponseEntity<FlightDeleteResponse> deleteFlight(@RequestBody FlightReadDeleteRequest flightReadDeleteRequest) {
+        return ResponseEntity.ok(flightService.deleteFlight(flightReadDeleteRequest));
     }
 
 //    @GetMapping("/{flightNumber}")
