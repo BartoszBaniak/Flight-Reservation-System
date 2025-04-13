@@ -1,10 +1,13 @@
 package com.reservation.system.dictionaries.flightNumber;
 
 import com.reservation.system.dictionaries.airport.Airport;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import static com.reservation.system.dictionaries.airport.Airport.*;
 
+@AllArgsConstructor
 @Getter
 public enum FlightNumber {
     LO101(WAW, LHR),
@@ -55,12 +58,8 @@ public enum FlightNumber {
     LO220(JFK, GDN),
     LO221(SIN, GDN);
 
-    private final Airport departure;
-    private final Airport arrival;
+    private final Airport airportDeparture;
+    private final Airport airportArrival;
 
-    FlightNumber(Airport departure, Airport arrival) {
-        this.departure = departure;
-        this.arrival = arrival;
-    }
 
 }

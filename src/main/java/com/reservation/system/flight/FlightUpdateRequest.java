@@ -2,9 +2,6 @@ package com.reservation.system.flight;
 
 import com.reservation.system.dictionaries.airport.Airport;
 import com.reservation.system.dictionaries.flightNumber.FlightNumber;
-import com.reservation.system.dictionaries.flightStatus.FlightStatus;
-import com.reservation.system.dictionaries.flightType.FlightType;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,15 +10,14 @@ import java.time.LocalTime;
 
 @Getter
 @Setter
-public class FlightCreateRequest {
+public class FlightUpdateRequest {
 
     private Airport flightDeparture;
     private Airport flightArrival;
-    private LocalTime flightDepartureTime; //hour:minute
-    private LocalTime flightArrivalTime; //hour:minute
+    private LocalTime flightDepartureTime;
+    private LocalTime flightArrivalTime;
+    private String flightDuration;
     private LocalDate flightDate;
     private FlightNumber flightNumber;
-    private FlightType flightType;
     private int flightSeatsNumber;
-
 }

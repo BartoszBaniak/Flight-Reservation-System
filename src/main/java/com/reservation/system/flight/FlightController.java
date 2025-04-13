@@ -1,13 +1,11 @@
 package com.reservation.system.flight;
 
-import com.reservation.system.dictionaries.flightNumber.FlightNumber;
-import com.reservation.system.response.ApiResponse;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
 
 @RestController
 @RequestMapping("/api/flight")
@@ -17,24 +15,32 @@ public class FlightController {
     private final FlightService flightService;
 
     @PostMapping("/create")
-    public ApiResponse<FlightCreateResponse> createFlight(@RequestBody FlightCreateRequest flightCreateRequest) {
-
-        return flightService.createFlight(flightCreateRequest);
+    public ResponseEntity<FlightCreateResponse> createFlight(@RequestBody FlightCreateRequest flightCreateRequest) {
+        return ResponseEntity.ok(flightService.createFlight(flightCreateRequest));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<FlightReadResponse> getFlightById(@PathVariable int id) {
+        return ResponseEntity.ok(flightService.getFlightById(id));
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<FlightReadResponse>> getAllFlights() {
+        return ResponseEntity.ok(flightService.getAllFlights());
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<FlightDeleteResponse> deleteFlight(@PathVariable int id) {
+        return ResponseEntity.ok(flightService.deleteFlight(id));
+    }
+
+//    @GetMapping("/{flightNumber}")
+//    public ResponseEntity<FlightEntity> getFlightByFlightNumber(@PathVariable FlightNumber flightNumber) {
+//        FlightEntity flight = flightService.getFlightByFlightNumber(flightNumber);
+//        return ResponseEntity.ok(flight);
+//    }
 
     /*
-    @GetMapping("/{id}")
-    public ResponseEntity<FlightEntity> getFlightById(@PathVariable int id) {
-        FlightEntity flight = flightService.getFlightById(id);
-        return ResponseEntity.ok(flight);
-    }
-
-    @GetMapping("/{flightNumber}")
-    public ResponseEntity<FlightEntity> getFlightByFlightNumber(@PathVariable FlightNumber flightNumber) {
-        FlightEntity flight = flightService.getFlightByFlightNumber(flightNumber);
-        return ResponseEntity.ok(flight);
-    }
 
     @GetMapping("/all")
     public ResponseEntity<List<FlightEntity>> getAllFlights() {
@@ -54,9 +60,9 @@ public class FlightController {
     }
 
      */
-
-    //TODO dodawanie lotów - tworzenie nowego lotu ------- powiedzmy ze jest
+    //TODO numery lotów i lotniska do oddzielnych entity - nie słowniki!
+    //TODO dodawanie lotów - tworzenie nowego lotu ------- powiedzmy ze jest v1, trzeba dodac uwzględnienie zmiany dnia i dodac automatyczne przypisywanie numeru lotu
     //TODO modyfikacja lotów - zmiana godziny wylotu
-    //TODO anulowanie (usuwanie) lotów
-    //TODO odczytywanie danych lotów - informacja skąd dokąd, o której godzinie wylatuje
+    //TODO anulowanie (usuwanie) lotów - jest i usuwa z bazy
+    //TODO odczytywanie danych lotów - informacja skąd dokąd, o której godzinie wylatuje - jest po ID i ALL
 }

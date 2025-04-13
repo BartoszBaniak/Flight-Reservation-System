@@ -9,10 +9,9 @@ import java.util.List;
 @Getter
 @Builder
 @AllArgsConstructor
-public class FlightCreateResponse {
+public class FlightDeleteResponse {
 
     private String data;
     private List<String> errors;
     private List<String> warnings;
-
 }
