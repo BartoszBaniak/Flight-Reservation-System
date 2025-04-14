@@ -20,8 +20,8 @@ public class FlightController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<FlightReadResponse> getFlight(@RequestBody FlightReadDeleteRequest flightReadDeleteRequest) {
-        return ResponseEntity.ok(flightService.getFlight(flightReadDeleteRequest));
+    public ResponseEntity<FlightReadResponse> getFlight(@RequestBody FlightIdentifierRequest flightIdentifierRequest) {
+        return ResponseEntity.ok(flightService.getFlight(flightIdentifierRequest));
     }
 
     @GetMapping("/search-all")
@@ -30,8 +30,13 @@ public class FlightController {
     }
 
     @DeleteMapping("/delete")
-    public ResponseEntity<FlightDeleteResponse> deleteFlight(@RequestBody FlightReadDeleteRequest flightReadDeleteRequest) {
-        return ResponseEntity.ok(flightService.deleteFlight(flightReadDeleteRequest));
+    public ResponseEntity<FlightDeleteResponse> deleteFlight(@RequestBody FlightIdentifierRequest flightIdentifierRequest) {
+        return ResponseEntity.ok(flightService.deleteFlight(flightIdentifierRequest));
+    }
+
+    @PutMapping("/update")
+    public ResponseEntity<FlightUpdateResponse> updateFlight(@RequestBody FlightUpdateRequest flightUpdateRequest) {
+        return ResponseEntity.ok(flightService.updateFlight(flightUpdateRequest));
     }
 
 //    @GetMapping("/{flightNumber}")
@@ -47,11 +52,7 @@ public class FlightController {
         return ResponseEntity.ok(flightService.getAllFlights());
     }
 
-    @PutMapping("/update/{id}")
-    public ResponseEntity<FlightEntity> updateFlight(@PathVariable int id, FlightEntity flightEntity) {
-        FlightEntity updatedFlight = flightService.updateFlight(id, flightEntity);
-        return ResponseEntity.ok(updatedFlight);
-    }
+
 
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Void> deleteFlight(@PathVariable int id) {

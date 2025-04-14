@@ -18,6 +18,7 @@ public class FlightService {
     public static final String TIME_STRING = "%02d:%02d";
     public static final String FLIGHT_CREATED_MESSAGE = "Flight created successfully";
     public static final String FLIGHT_DELETED_MESSAGE = "Flight deleted successfully";
+    public static final String FLIGHT_UPDATED_MESSAGE = "Flight updated successfully";
     public static final String FLIGHT_EXISTS_MESSAGE = "Flight already exists";
     public static final String FLIGHT_NOT_FOUND_MESSAGE = "Flight not found";
     private final FlightRepository flightRepository;
@@ -36,9 +37,44 @@ public class FlightService {
 
     }
 
-    public FlightReadResponse getFlight(FlightReadDeleteRequest flightReadDeleteRequest) {
+    @Transactional
+    public FlightUpdateResponse updateFlight(FlightUpdateRequest flightUpdateRequest) {
 
-        FlightEntity flightEntity = searchForFlight(flightReadDeleteRequest);
+
+        FlightIdentifierRequest flightIdentifierRequest = flightUpdateRequest.getFlightUpdateRequestIdentifier();
+        FlightUpdateRequestDto flightUpdateRequestDto = flightUpdateRequest.getFlightUpdateRequestDto();
+
+        FlightEntity existingFlight = flightRepository.findByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
+                flightIdentifierRequest.getFlightDeparture(),
+                        flightIdentifierRequest.getFlightArrival(),
+                        flightIdentifierRequest.getFlightDate(),
+                        flightIdentifierRequest.getFlightDepartureTime())
+                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(2L).build());
+
+        String flightDuration = formatFlightDuration(flightUpdateRequestDto.getFlightDepartureTime(), flightUpdateRequestDto.getFlightArrivalTime());
+
+        updateFlightEntity(existingFlight, flightUpdateRequestDto, flightDuration);
+
+        return FlightUpdateResponse.builder().data(FLIGHT_UPDATED_MESSAGE).warnings(List.of()).errors(List.of()).build();
+    }
+
+    @Transactional
+    public FlightDeleteResponse deleteFlight(FlightIdentifierRequest flightIdentifierRequest) {
+
+        searchForFlight(flightIdentifierRequest);
+        flightRepository.deleteByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
+                flightIdentifierRequest.getFlightDeparture(),
+                flightIdentifierRequest.getFlightArrival(),
+                flightIdentifierRequest.getFlightDate(),
+                flightIdentifierRequest.getFlightDepartureTime());
+
+        return FlightDeleteResponse.builder().data(FLIGHT_DELETED_MESSAGE).warnings(List.of()).errors(List.of()).build();
+
+    }
+
+    public FlightReadResponse getFlight(FlightIdentifierRequest flightIdentifierRequest) {
+
+        FlightEntity flightEntity = searchForFlight(flightIdentifierRequest);
         FlightDto flightDto = mapToFlightDto(flightEntity);
 
         return FlightReadResponse.builder()
@@ -74,6 +110,17 @@ public class FlightService {
                 .build();
     }
 
+    private void updateFlightEntity(FlightEntity existingFlight, FlightUpdateRequestDto flightUpdateRequestDto, String flightDuration) {
+        existingFlight.setFlightDeparture(flightUpdateRequestDto.getFlightDeparture());
+        existingFlight.setFlightArrival(flightUpdateRequestDto.getFlightArrival());
+        existingFlight.setFlightDepartureTime(flightUpdateRequestDto.getFlightDepartureTime());
+        existingFlight.setFlightArrivalTime(flightUpdateRequestDto.getFlightArrivalTime());
+        existingFlight.setFlightDuration(flightDuration);
+        existingFlight.setFlightDate(flightUpdateRequestDto.getFlightDate());
+        existingFlight.setFlightNumber(flightUpdateRequestDto.getFlightNumber());
+        existingFlight.setFlightSeatsNumber(flightUpdateRequestDto.getFlightSeatsNumber());
+    }
+
     private String formatFlightDuration(LocalTime departureTime, LocalTime arrivalTime) {
         Duration duration = Duration.between(departureTime, arrivalTime);
         long durationInMinutes = duration.toMinutes();
@@ -90,9 +137,17 @@ public class FlightService {
                         flightCreateRequest.getFlightDepartureTime());
     }
 
-    private FlightEntity searchForFlight(FlightReadDeleteRequest flightReadDeleteRequest) {
+    private boolean checkIfFlightExists(FlightUpdateRequestDto flightUpdateRequestDto) {
+
+        return flightRepository.existsByFlightNumberAndFlightDateAndFlightDepartureTime(
+                flightUpdateRequestDto.getFlightNumber(),
+                flightUpdateRequestDto.getFlightDate(),
+                flightUpdateRequestDto.getFlightDepartureTime());
+    }
+
+    private FlightEntity searchForFlight(FlightIdentifierRequest flightIdentifierRequest) {
         return flightRepository.findByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
-                        flightReadDeleteRequest.getFlightDeparture(), flightReadDeleteRequest.getFlightArrival(), flightReadDeleteRequest.getFlightDate(), flightReadDeleteRequest.getFlightDepartureTime())
+                        flightIdentifierRequest.getFlightDeparture(), flightIdentifierRequest.getFlightArrival(), flightIdentifierRequest.getFlightDate(), flightIdentifierRequest.getFlightDepartureTime())
                 .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(1L).build());
     }
 
@@ -111,19 +166,6 @@ public class FlightService {
                 .build();
     }
 
-    @Transactional
-    public FlightDeleteResponse deleteFlight(FlightReadDeleteRequest flightReadDeleteRequest) {
-
-        searchForFlight(flightReadDeleteRequest);
-        flightRepository.deleteByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
-                flightReadDeleteRequest.getFlightDeparture(),
-                flightReadDeleteRequest.getFlightArrival(),
-                flightReadDeleteRequest.getFlightDate(),
-                flightReadDeleteRequest.getFlightDepartureTime());
-
-        return FlightDeleteResponse.builder().data(FLIGHT_DELETED_MESSAGE).warnings(List.of()).errors(List.of()).build();
-
-    }
 }
 
 //

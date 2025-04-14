@@ -9,7 +9,7 @@ import java.time.LocalTime;
 
 @Getter
 @Setter
-public class FlightReadDeleteRequest {
+public class FlightIdentifierRequest {
 
     private Airport flightDeparture;
     private Airport flightArrival;
