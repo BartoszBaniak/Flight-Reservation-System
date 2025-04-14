@@ -1,4 +1,4 @@
-package com.reservation.system.flight;
+package com.reservation.system.passenger;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import java.util.List;
 @Getter
 @Builder
 @AllArgsConstructor
-public class FlightUpdateResponse {
+public class PassengerCreateResponse {
 
     private String data;
     private List<String> errors;

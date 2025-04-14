@@ -38,8 +38,7 @@ public class FlightService {
     }
 
     @Transactional
-    public FlightUpdateResponse updateFlight(FlightUpdateRequest flightUpdateRequest) {
-
+    public FlightIdentifierResponse updateFlight(FlightUpdateRequest flightUpdateRequest) {
 
         FlightIdentifierRequest flightIdentifierRequest = flightUpdateRequest.getFlightUpdateRequestIdentifier();
         FlightUpdateRequestDto flightUpdateRequestDto = flightUpdateRequest.getFlightUpdateRequestDto();
@@ -49,26 +48,27 @@ public class FlightService {
                         flightIdentifierRequest.getFlightArrival(),
                         flightIdentifierRequest.getFlightDate(),
                         flightIdentifierRequest.getFlightDepartureTime())
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(2L).build());
+                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(2L).build()); //todo przeniesc do private method
 
         String flightDuration = formatFlightDuration(flightUpdateRequestDto.getFlightDepartureTime(), flightUpdateRequestDto.getFlightArrivalTime());
 
         updateFlightEntity(existingFlight, flightUpdateRequestDto, flightDuration);
 
-        return FlightUpdateResponse.builder().data(FLIGHT_UPDATED_MESSAGE).warnings(List.of()).errors(List.of()).build();
+        return FlightIdentifierResponse.builder().data(FLIGHT_UPDATED_MESSAGE).warnings(List.of()).errors(List.of()).build();
     }
 
     @Transactional
-    public FlightDeleteResponse deleteFlight(FlightIdentifierRequest flightIdentifierRequest) {
+    public FlightIdentifierResponse deleteFlight(FlightIdentifierRequest flightIdentifierRequest) {
 
         searchForFlight(flightIdentifierRequest);
         flightRepository.deleteByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
                 flightIdentifierRequest.getFlightDeparture(),
                 flightIdentifierRequest.getFlightArrival(),
                 flightIdentifierRequest.getFlightDate(),
-                flightIdentifierRequest.getFlightDepartureTime());
+                flightIdentifierRequest.getFlightDepartureTime()
+        );
 
-        return FlightDeleteResponse.builder().data(FLIGHT_DELETED_MESSAGE).warnings(List.of()).errors(List.of()).build();
+        return FlightIdentifierResponse.builder().data(FLIGHT_DELETED_MESSAGE).warnings(List.of()).errors(List.of()).build();
 
     }
 
@@ -137,14 +137,6 @@ public class FlightService {
                         flightCreateRequest.getFlightDepartureTime());
     }
 
-    private boolean checkIfFlightExists(FlightUpdateRequestDto flightUpdateRequestDto) {
-
-        return flightRepository.existsByFlightNumberAndFlightDateAndFlightDepartureTime(
-                flightUpdateRequestDto.getFlightNumber(),
-                flightUpdateRequestDto.getFlightDate(),
-                flightUpdateRequestDto.getFlightDepartureTime());
-    }
-
     private FlightEntity searchForFlight(FlightIdentifierRequest flightIdentifierRequest) {
         return flightRepository.findByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
                         flightIdentifierRequest.getFlightDeparture(), flightIdentifierRequest.getFlightArrival(), flightIdentifierRequest.getFlightDate(), flightIdentifierRequest.getFlightDepartureTime())
@@ -167,31 +159,3 @@ public class FlightService {
     }
 
 }
-
-//
-//    public ApiResponse<FlightUpdateResponse> updateFlight(int flightId, FlightUpdateRequest flightUpdateRequest) {
-//
-//        FlightEntity existingFlight = flightRepository.findById(flightId)
-//                .orElseThrow(() -> new IllegalStateException("Flight with ID: " + flightId + " not found"));
-//
-//        existingFlight.setFlightDeparture(flightUpdateRequest.getFlightDeparture());
-//        existingFlight.setFlightArrival(flightUpdateRequest.getFlightArrival());
-//        existingFlight.setFlightDepartureTime(flightUpdateRequest.getFlightDepartureTime());
-//        existingFlight.setFlightArrivalTime(flightUpdateRequest.getFlightArrivalTime());
-//        existingFlight.setFlightDuration(flightUpdateRequest.getFlightDuration());
-//        existingFlight.setFlightDate(flightUpdateRequest.getFlightDate());
-//        existingFlight.setFlightNumber(flightUpdateRequest.getFlightNumber());
-//        existingFlight.setFlightType(flightUpdateRequest.getFlightType());
-//        existingFlight.setFlightSeatsNumber(flightUpdateRequest.getFlightSeatsNumber());
-//
-//    }
-//
-//    public ApiResponse<String> deleteFlight(int flightId) {
-//
-//        if(!flightRepository.existsById(flightId)) {
-//            return new ApiResponse<>(LocalDateTime.now(), "Flight not found", "Flight with ID: " + flightId + " not found");
-//        } else {
-//            flightRepository.deleteById(flightId);
-//            return new ApiResponse<>(LocalDateTime.now(), "Flight deleted successfully", "Flight with ID: " + flightId + " deleted successfully");
-//        }
-//    }
