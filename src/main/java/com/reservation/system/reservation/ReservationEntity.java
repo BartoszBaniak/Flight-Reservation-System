@@ -33,7 +33,10 @@ public class ReservationEntity {
     private String flightNumber;
 
     @Column(nullable = false)
-    private String passengerName;
+    private String passengerFirstName;
+
+    @Column(nullable = false)
+    private String passengerLastName;
 
     @Column(nullable = false)
     private String passengerEmail;

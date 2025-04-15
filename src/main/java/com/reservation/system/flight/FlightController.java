@@ -1,5 +1,6 @@
 package com.reservation.system.flight;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +16,7 @@ public class FlightController {
     private final FlightService flightService;
 
     @PostMapping("/create")
-    public ResponseEntity<FlightCreateResponse> createFlight(@RequestBody FlightCreateRequest flightCreateRequest) {
+    public ResponseEntity<FlightCreateResponse> createFlight(@RequestBody @Valid FlightCreateRequest flightCreateRequest) {
         return ResponseEntity.ok(flightService.createFlight(flightCreateRequest));
     }
 
@@ -35,7 +36,7 @@ public class FlightController {
     }
 
     @PutMapping("/update")
-    public ResponseEntity<FlightIdentifierResponse> updateFlight(@RequestBody FlightUpdateRequest flightUpdateRequest) {
+    public ResponseEntity<FlightIdentifierResponse> updateFlight(@RequestBody @Valid FlightUpdateRequest flightUpdateRequest) {
         return ResponseEntity.ok(flightService.updateFlight(flightUpdateRequest));
     }
 

@@ -1,7 +1,7 @@
 package com.reservation.system.flight;
 
-import com.reservation.system.dictionaries.airport.Airport;
-import com.reservation.system.dictionaries.flightNumber.FlightNumber;
+import com.reservation.system.airport.AirportDto;
+import com.reservation.system.airport.AirportEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,12 +16,12 @@ import java.time.LocalTime;
 @AllArgsConstructor
 public class FlightUpdateRequestDto {
 
-    private Airport flightDeparture;
-    private Airport flightArrival;
+    private AirportDto flightDeparture;
+    private AirportDto flightArrival;
     private LocalTime flightDepartureTime;
     private LocalTime flightArrivalTime;
     private String flightDuration;
     private LocalDate flightDate;
-    private FlightNumber flightNumber;
+    private String flightNumber;
     private int flightSeatsNumber;
 }

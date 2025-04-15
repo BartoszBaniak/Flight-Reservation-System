@@ -1,7 +1,5 @@
 package com.reservation.system.passenger;
 
-import com.reservation.system.flight.FlightUpdateRequest;
-import com.reservation.system.flight.FlightUpdateRequestDto;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;

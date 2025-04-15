@@ -1,7 +1,8 @@
 package com.reservation.system.flight;
 
-import com.reservation.system.dictionaries.airport.Airport;
-import com.reservation.system.dictionaries.flightNumber.FlightNumber;
+import com.reservation.system.airport.AirportDto;
+import com.reservation.system.airport.AirportEntity;
+import com.reservation.system.flightConnection.FlightConnectionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,22 +13,22 @@ import java.time.LocalTime;
 @Repository
 public interface FlightRepository extends JpaRepository<FlightEntity, Integer> {
 
-    boolean existsByFlightNumberAndFlightDateAndFlightDepartureTime(
-            FlightNumber flightNumber,
+    boolean existsByFlightConnectionAndFlightDateAndFlightDepartureTime(
+            FlightConnectionEntity flightConnection,
             LocalDate flightDate,
             LocalTime flightDepartureTime
     );
 
     Optional<FlightEntity> findByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
-            Airport flightDeparture,
-            Airport flightArrival,
+            AirportEntity flightDeparture,
+            AirportEntity flightArrival,
             LocalDate flightDate,
             LocalTime flightDepartureTime
     );
 
     void deleteByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
-            Airport flightDeparture,
-            Airport flightArrival,
+            AirportEntity flightDeparture,
+            AirportEntity flightArrival,
             LocalDate flightDate,
             LocalTime flightDepartureTime
     );
