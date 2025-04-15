@@ -23,4 +23,7 @@ public interface PassengerRepository extends JpaRepository<PassengerEntity, Inte
             String phoneNumber
     );
 
+    PassengerEntity getPassengerEntityByEmailAndPhoneNumber(
+            String passengerEmail,
+            String passengerPhoneNumber);
 }

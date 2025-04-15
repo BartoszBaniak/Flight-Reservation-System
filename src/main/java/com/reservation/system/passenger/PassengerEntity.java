@@ -1,8 +1,12 @@
 package com.reservation.system.passenger;
 
+import com.reservation.system.reservation.ReservationEntity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -28,10 +32,13 @@ public class PassengerEntity {
     private String lastName;
 
     @Column(nullable = false)
-    @Pattern(regexp = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$", message = "Invalid email format")
+    @Email(message = "Invalid email format.")
     private String email;
 
     @Column(nullable = false)
     @Pattern(regexp = "\\d{9}", message = "Phone number must consist of exactly 9 digits.")
     private String phoneNumber;
+
+    @OneToMany(mappedBy = "passengerEntity", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ReservationEntity> reservations;
 }
