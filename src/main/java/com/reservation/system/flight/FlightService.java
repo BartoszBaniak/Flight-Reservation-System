@@ -7,6 +7,8 @@ import com.reservation.system.dictionaries.flightStatus.FlightStatus;
 import com.reservation.system.exceptions.InternalBusinessException;
 import com.reservation.system.flightConnection.FlightConnectionEntity;
 import com.reservation.system.flightConnection.FlightConnectionRepository;
+import com.reservation.system.seat.SeatEntity;
+import com.reservation.system.seat.SeatRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,6 +35,7 @@ public class FlightService {
     private final FlightRepository flightRepository;
     private final FlightConnectionRepository flightConnectionRepository;
     private final AirportRepository airportRepository;
+    private final SeatRepository seatRepository;
 
     @Transactional
     public FlightCreateResponse createFlight(FlightCreateRequest flightCreateRequest) {
@@ -51,6 +55,14 @@ public class FlightService {
         FlightConnectionEntity flightConnectionEntity = createFlightConnectionEntity(flightDeparture, flightArrival);
 
         flightRepository.save(createFlightEntity(flightCreateRequest, flightDuration, flightConnectionEntity));
+        List<SeatEntity> seatEntities = generateAndGetAvailableSeats(flightCreateRequest.getFlightSeatsNumber(),
+                flightRepository.findByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
+                        flightDeparture,
+                        flightArrival,
+                        flightCreateRequest.getFlightDate(),
+                        flightCreateRequest.getFlightDepartureTime()).get());
+
+        seatRepository.saveAll(seatEntities);
 
         return FlightCreateResponse.builder().data(FLIGHT_CREATED_MESSAGE).warnings(List.of()).errors(List.of()).build();
     }
@@ -287,6 +299,31 @@ public class FlightService {
                         .type(HttpStatus.BAD_REQUEST)
                         .message(AIRPORT_NOT_FOUND_MESSAGE)
                         .code(1L).build());
+    }
+
+    private List<SeatEntity> generateAndGetAvailableSeats(int seatsNumber, FlightEntity flightEntity) {
+
+        List<SeatEntity> seatEntities = new ArrayList<>();
+        int fullSeatsRows = seatsNumber / 6;
+        int remainingSeats = seatsNumber % 6;
+
+        for(int i = 1; i <= fullSeatsRows; i++) {
+            for(char seatLetter = 'A'; seatLetter <= 'F'; seatLetter++) {
+                String seatNumber = String.valueOf(i) + seatLetter;
+                seatEntities.add(SeatEntity.builder().flightEntity(flightEntity).seatNumber(seatNumber).isAvailable(true).build());
+            }
+        }
+
+        if(remainingSeats > 0) {
+            for(int i = fullSeatsRows + 1; i <= fullSeatsRows + remainingSeats; i++) {
+                for(char seatLetter = 'A'; seatLetter <= 'F'; seatLetter++) {
+                    String seatNumber = String.valueOf(i) + seatLetter;
+                    seatEntities.add(SeatEntity.builder().flightEntity(flightEntity).seatNumber(seatNumber).isAvailable(true).build());
+                }
+            }
+        }
+
+        return seatEntities;
     }
 
 }

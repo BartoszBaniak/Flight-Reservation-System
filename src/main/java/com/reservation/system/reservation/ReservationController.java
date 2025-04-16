@@ -1,6 +1,10 @@
 package com.reservation.system.reservation;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -8,6 +12,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/reservation")
 @AllArgsConstructor
 public class ReservationController {
+
+    private final ReservationService reservationService;
+
+    @PostMapping("/create")
+    public ResponseEntity<ReservationCreateResponse> createReservation(@RequestBody @Valid ReservationCreateRequest reservationCreateRequest) {
+        return ResponseEntity.ok(reservationService.createReservation(reservationCreateRequest));
+    }
 
     //TODO dodawanie rezerwacji
     //TODO modyfikacja rezerwacji - zmiana dnia wylotu?

@@ -29,4 +29,5 @@ public class SeatEntity {
 
     @Column(nullable = false)
     private boolean isAvailable;
+
 }

@@ -62,7 +62,7 @@ public class FlightEntity {
 
     @Column(nullable = false)
     @Min(value = 112, message = "Flight must have at least 112 seats.")
-    @Max(value = 294, message = "Flight must have at most 294 seats.")
+    @Max(value = 189, message = "Flight must have at most 189 seats.")
     private int flightSeatsNumber;
 
 }

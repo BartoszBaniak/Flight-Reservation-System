@@ -21,7 +21,7 @@ public class ReservationEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int reservationId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private Long reservationNumber; //to do random generator
 
     @ManyToOne
@@ -34,7 +34,7 @@ public class ReservationEntity {
 
     @ManyToOne
     @JoinColumn(name = "seat_id", nullable = false)
-    private SeatEntity seatNumber;
+    private SeatEntity seatEntity;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
