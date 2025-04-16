@@ -20,8 +20,6 @@ public class FlightUpdateRequestDto {
     private AirportDto flightArrival;
     private LocalTime flightDepartureTime;
     private LocalTime flightArrivalTime;
-    private String flightDuration;
     private LocalDate flightDate;
-    private String flightNumber;
     private int flightSeatsNumber;
 }

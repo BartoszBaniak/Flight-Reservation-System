@@ -75,15 +75,21 @@ public class FlightService {
                         flightIdentifierRequest.getFlightDepartureTime())
                 .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(2L).build()); //todo przeniesc do private method
 
+        seatService.deleteSeatsByFlight(existingFlight);
+        seatService.refreshSeatsForFlight(existingFlight, flightUpdateRequestDto.getFlightSeatsNumber());
+
         String flightDuration = formatFlightDuration(flightUpdateRequestDto.getFlightDepartureTime(), flightUpdateRequestDto.getFlightArrivalTime());
 
         updateFlightEntity(existingFlight, flightUpdateRequestDto, flightDuration);
+
 
         return FlightIdentifierResponse.builder().data(FLIGHT_UPDATED_MESSAGE).warnings(List.of()).errors(List.of()).build();
     }
 
     @Transactional
     public FlightIdentifierResponse deleteFlight(FlightIdentifierRequest flightIdentifierRequest) {
+
+        seatService.deleteSeatsByFlight(searchForFlight(flightIdentifierRequest));
 
         searchForFlight(flightIdentifierRequest);
         flightRepository.deleteByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
@@ -132,6 +138,16 @@ public class FlightService {
                         reservationCreateRequest.getFlightDepartureTime())
                 .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(1L).build());
 
+    }
+
+    public FlightEntity searchForFlight(FlightIdentifierRequest flightIdentifierRequest) {
+
+        return flightRepository.findByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
+                        airportService.getAirportEntityByCode(flightIdentifierRequest.getFlightDeparture().getAirportCode()),
+                        airportService.getAirportEntityByCode(flightIdentifierRequest.getFlightArrival().getAirportCode()),
+                        flightIdentifierRequest.getFlightDate(),
+                        flightIdentifierRequest.getFlightDepartureTime())
+                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(1L).build());
     }
 
     private FlightEntity createFlightEntity(FlightCreateRequest flightCreateRequest, String flightDuration, FlightConnectionEntity flightConnectionEntity) {
@@ -187,16 +203,6 @@ public class FlightService {
         }
 
         return false;
-    }
-
-    private FlightEntity searchForFlight(FlightIdentifierRequest flightIdentifierRequest) {
-
-        return flightRepository.findByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
-                        airportService.getAirportEntityByCode(flightIdentifierRequest.getFlightDeparture().getAirportCode()),
-                        airportService.getAirportEntityByCode(flightIdentifierRequest.getFlightArrival().getAirportCode()),
-                        flightIdentifierRequest.getFlightDate(),
-                        flightIdentifierRequest.getFlightDepartureTime())
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(1L).build());
     }
 
     private FlightDto mapToFlightDto(FlightEntity flightEntity) {

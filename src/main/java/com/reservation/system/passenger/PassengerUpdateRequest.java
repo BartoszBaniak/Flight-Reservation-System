@@ -9,6 +9,6 @@ import lombok.Setter;
 public class PassengerUpdateRequest {
 
     private PassengerIdentifierRequest passengerIdentifierRequest;
-    private PassengerRequestDto passengerRequestDto;
+    private PassengerDto passengerRequestDto;
 
 }

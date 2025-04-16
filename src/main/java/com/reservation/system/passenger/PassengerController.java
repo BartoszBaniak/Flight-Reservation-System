@@ -15,7 +15,7 @@ public class PassengerController {
     private final PassengerService passengerService;
 
     @PostMapping("/create")
-    public ResponseEntity<PassengerCreateResponse> createPassenger(@RequestBody @Valid PassengerRequestDto passengerRequestDto) {
+    public ResponseEntity<PassengerCreateResponse> createPassenger(@RequestBody @Valid PassengerDto passengerRequestDto) {
         return ResponseEntity.ok(passengerService.createPassenger(passengerRequestDto));
     }
 

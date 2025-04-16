@@ -1,10 +1,15 @@
 package com.reservation.system.seat;
 
+import com.reservation.system.airport.AirportService;
 import com.reservation.system.exceptions.InternalBusinessException;
 import com.reservation.system.flight.FlightEntity;
+import com.reservation.system.flight.FlightIdentifierRequest;
+import com.reservation.system.flight.FlightService;
+import com.reservation.system.passenger.PassengerEntity;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +22,6 @@ public class SeatService {
     public static final String SEAT_NOT_FOUND_MESSAGE = "Seat not found";
 
     private final SeatRepository seatRepository;
-
 
     public void saveAllSeats(List<SeatEntity> seatEntities) {
         seatRepository.saveAll(seatEntities);
@@ -57,4 +61,20 @@ public class SeatService {
             throw InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(SEAT_RESERVED_MESSAGE).code(1L).build();
         }
     }
+
+    public void deleteSeatsByFlight(FlightEntity flightEntity) {
+        seatRepository.deleteByFlightEntity(flightEntity);
+    }
+
+    @Transactional
+    public void refreshSeatsForFlight(FlightEntity flightEntity, int seatsNumber) {
+        seatRepository.deleteByFlightEntity(flightEntity);
+        List<SeatEntity> seatEntities = generateAndGetAvailableSeats(seatsNumber, flightEntity);
+        saveAllSeats(seatEntities);
+    }
+
+    public void relaseAllSeatsForPassenger(PassengerEntity passengerEntity) {
+
+    }
+
 }

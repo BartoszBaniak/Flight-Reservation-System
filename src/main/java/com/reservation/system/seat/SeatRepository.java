@@ -12,4 +12,6 @@ public interface SeatRepository extends JpaRepository<SeatEntity, Integer> {
             String seatNumber
     );
 
+    void deleteByFlightEntity(FlightEntity flightEntity);
+
 }

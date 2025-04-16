@@ -127,6 +127,8 @@ public class ReservationService {
 
     private ReservationEntity createReservationEntity(ReservationCreateRequest reservationCreateRequest) {
 
+        passengerService.searchForPassenger(reservationCreateRequest.getPassengerDto());
+
         FlightEntity flightEntity = flightService.getFlightEntity(reservationCreateRequest);
         SeatEntity seatEntity = seatService.getSeatEntity(flightEntity, reservationCreateRequest.getSeatNumber());
 
