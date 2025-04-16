@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+
 @Repository
 public interface FlightRepository extends JpaRepository<FlightEntity, Integer> {
 
@@ -25,7 +26,6 @@ public interface FlightRepository extends JpaRepository<FlightEntity, Integer> {
             LocalDate flightDate,
             LocalTime flightDepartureTime
     );
-
     void deleteByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
             AirportEntity flightDeparture,
             AirportEntity flightArrival,

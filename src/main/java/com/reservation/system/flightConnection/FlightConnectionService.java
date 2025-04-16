@@ -1,10 +1,7 @@
 package com.reservation.system.flightConnection;
 
 import com.reservation.system.airport.AirportEntity;
-import com.reservation.system.airport.AirportRepository;
-import com.reservation.system.exceptions.InternalBusinessException;
 import lombok.AllArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -13,10 +10,7 @@ import java.util.Optional;
 @AllArgsConstructor
 public class FlightConnectionService {
 
-    public static final String AIRPORT_NOT_FOUND_MESSAGE = "Airport not found";
-
     private final FlightConnectionRepository flightConnectionRepository;
-    private final AirportRepository airportRepository;
 
     public FlightConnectionEntity createFlightConnection(AirportEntity flightDeparture, AirportEntity flightArrival) {
         return flightConnectionRepository.findByDepartureAirportAndArrivalAirport(flightDeparture, flightArrival)
@@ -75,13 +69,5 @@ public class FlightConnectionService {
         } else {
             return 100;
         }
-    }
-
-    private AirportEntity getAirportEntityByCode(String airportCode) {
-        return airportRepository.findByAirportCode(airportCode)
-                .orElseThrow(() -> InternalBusinessException.builder()
-                        .type(HttpStatus.BAD_REQUEST)
-                        .message(AIRPORT_NOT_FOUND_MESSAGE)
-                        .code(1L).build());
     }
 }

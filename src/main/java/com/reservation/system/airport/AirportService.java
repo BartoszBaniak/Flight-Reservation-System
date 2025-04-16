@@ -18,4 +18,21 @@ public class AirportService {
         return airportRepository.findByAirportCity(airportCity)
                 .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(AIRPORT_NOT_FOUND_MESSAGE).code(1L).build());
     }
+
+    public AirportEntity getAirportEntityByCode(String airportCode) {
+        return airportRepository.findByAirportCode(airportCode)
+                .orElseThrow(() -> InternalBusinessException.builder()
+                        .type(HttpStatus.BAD_REQUEST)
+                        .message(AIRPORT_NOT_FOUND_MESSAGE)
+                        .code(1L).build());
+    }
+
+    public AirportDto mapToAirportDto(AirportEntity airportEntity) {
+
+        return AirportDto.builder()
+                .airportCity(airportEntity.getAirportCity())
+                .airportCode(airportEntity.getAirportCode())
+                .build();
+
+    }
 }

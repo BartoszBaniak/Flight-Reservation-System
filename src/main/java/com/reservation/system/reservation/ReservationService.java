@@ -1,26 +1,19 @@
 package com.reservation.system.reservation;
 
-import com.reservation.system.airport.AirportEntity;
-import com.reservation.system.airport.AirportRepository;
-import com.reservation.system.airport.AirportService;
 import com.reservation.system.dictionaries.flightStatus.FlightStatus;
 import com.reservation.system.exceptions.InternalBusinessException;
-import com.reservation.system.flight.FlightCreateResponse;
 import com.reservation.system.flight.FlightEntity;
-import com.reservation.system.flight.FlightRepository;
-import com.reservation.system.passenger.PassengerDto;
+import com.reservation.system.flight.FlightService;
 import com.reservation.system.passenger.PassengerEntity;
-import com.reservation.system.passenger.PassengerRepository;
+import com.reservation.system.passenger.PassengerService;
 import com.reservation.system.seat.SeatEntity;
-import com.reservation.system.seat.SeatRepository;
+import com.reservation.system.seat.SeatService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -28,14 +21,14 @@ public class ReservationService {
 
     public static final String RESERVATION_NOT_FOUND_MESSAGE = "Reservation not found";
     public static final String RESERVATION_CREATED_MESSAGE = "Reservation created successfully";
-    public static final String FLIGHT_NOT_FOUND_MESSAGE = "Flight not found";
-    public static final String SEAT_RESERVED_MESSAGE = "Seat is already reserved.";
+    public static final String RESERVATION_UPDATED_MESSAGE = "Reservation updated successfully";
+    public static final String RESERVATION_DELETED_MESSAGE = "Reservation deleted successfully";
 
     private final ReservationRepository reservationRepository;
-    private final AirportService airportService;
-    private final FlightRepository flightRepository;
-    private final SeatRepository seatRepository;
-    private final PassengerRepository passengerRepository;
+
+    private final FlightService flightService;
+    private final SeatService seatService;
+    private final PassengerService passengerService;
 
     @Transactional
     public ReservationCreateResponse createReservation(ReservationCreateRequest reservationCreateRequest) {
@@ -43,64 +36,127 @@ public class ReservationService {
         reservationRepository.save(createReservationEntity(reservationCreateRequest));
 
         return ReservationCreateResponse.builder().data(RESERVATION_CREATED_MESSAGE).warnings(List.of()).errors(List.of()).build();
+    }
 
+    @Transactional
+    public ReservationIdentifierResponse updateReservation(ReservationUpdateRequest reservationUpdateRequest) {
 
+        ReservationEntity reservationEntity = searchForReservation(reservationUpdateRequest);
+        FlightEntity flightEntity = reservationEntity.getFlightEntity();
+
+        if(!reservationEntity.getSeatEntity().getSeatNumber().equals(reservationUpdateRequest.getSeatNumber())) {
+            SeatEntity seatEntity = seatService.getSeatEntity(flightEntity, reservationUpdateRequest.getSeatNumber());
+
+            seatService.checkIfSeatIsAvailable(seatEntity);
+
+            reservationEntity.getSeatEntity().setAvailable(true);
+            seatService.saveSeat(reservationEntity.getSeatEntity());
+
+            seatEntity.setAvailable(false);
+            seatService.saveSeat(seatEntity);
+
+            reservationEntity.setSeatEntity(seatEntity);
+        }
+
+        PassengerEntity passengerEntity = passengerService.getPassengerEntity(reservationUpdateRequest.getPassengerDto());
+
+        if(!reservationUpdateRequest.getPassengerDto().getPhoneNumber().equals(passengerEntity.getPhoneNumber())) {
+
+            passengerEntity.setPhoneNumber(reservationUpdateRequest.getPassengerDto().getPhoneNumber());
+        }
+
+        if(!reservationUpdateRequest.getPassengerDto().getEmail().equals(passengerEntity.getEmail())) {
+            passengerEntity.setEmail(reservationUpdateRequest.getPassengerDto().getEmail());
+        }
+
+        passengerService.savePassenger(passengerEntity);
+
+        return ReservationIdentifierResponse.builder()
+                .data(RESERVATION_UPDATED_MESSAGE)
+                .warnings(List.of())
+                .errors(List.of())
+                .build();
+    }
+
+    @Transactional
+    public ReservationIdentifierResponse deleteReservation(ReservationIdentifierRequest reservationIdentifierRequest) {
+
+        SeatEntity seatEntity = searchForReservation(reservationIdentifierRequest).getSeatEntity();
+        seatEntity.setAvailable(true);
+
+        reservationRepository.deleteByReservationNumber(reservationIdentifierRequest.getReservationNumber());
+        return ReservationIdentifierResponse.builder()
+                .data(RESERVATION_DELETED_MESSAGE)
+                .warnings(List.of())
+                .errors(List.of())
+                .build();
+    }
+
+    public ReservationReadResponse getReservation(ReservationIdentifierRequest reservationIdentifierRequest) {
+
+        return ReservationReadResponse.builder()
+                .data(mapToReservationDto(searchForReservation(reservationIdentifierRequest)))
+                .warnings(List.of())
+                .errors(List.of())
+                .build();
+    }
+
+    public List<ReservationReadResponse> getAllReservations() {
+        return reservationRepository.findAll().stream()
+                .map(this::mapToReservationDto)
+                .map(reservationDto -> ReservationReadResponse.builder()
+                        .data(reservationDto)
+                        .warnings(List.of())
+                        .errors(List.of())
+                        .build())
+                .toList();
+    }
+
+    private ReservationDto mapToReservationDto(ReservationEntity reservationEntity) {
+        return ReservationDto.builder()
+                .reservationNumber(reservationEntity.getReservationNumber())
+                .flightDeparture(reservationEntity.getFlightEntity().getFlightDeparture().getAirportCity())
+                .flightArrival(reservationEntity.getFlightEntity().getFlightArrival().getAirportCity())
+                .flightDate(reservationEntity.getFlightEntity().getFlightDate())
+                .flightDepartureTime(reservationEntity.getFlightEntity().getFlightDepartureTime())
+                .seatNumber(reservationEntity.getSeatEntity().getSeatNumber())
+                .passengerEmail(reservationEntity.getPassengerEntity().getEmail())
+                .passengerPhoneNumber(reservationEntity.getPassengerEntity().getPhoneNumber())
+                .build();
     }
 
     private ReservationEntity createReservationEntity(ReservationCreateRequest reservationCreateRequest) {
 
-        PassengerEntity passengerEntity = getPassengerEntity(reservationCreateRequest.getPassengerDto());
-        FlightEntity flightEntity = getFlightEntity(reservationCreateRequest);
-        SeatEntity seatEntity = getSeatEntity(flightEntity, reservationCreateRequest.getSeatNumber());
+        FlightEntity flightEntity = flightService.getFlightEntity(reservationCreateRequest);
+        SeatEntity seatEntity = seatService.getSeatEntity(flightEntity, reservationCreateRequest.getSeatNumber());
 
-        if(!seatEntity.isAvailable()) {
-            throw InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(SEAT_RESERVED_MESSAGE).code(1L).build();
-        }
+        seatService.checkIfSeatIsAvailable(seatEntity);
 
         seatEntity.setAvailable(false);
-        seatRepository.save(seatEntity);
+        seatService.saveSeat(seatEntity);
 
         Long reservationNumber = reservationRepository.findMaxReservationNumber() + 1;
 
         return ReservationEntity.builder()
-                .passengerEntity(passengerEntity)
+                .passengerEntity(passengerService.getPassengerEntity(reservationCreateRequest.getPassengerDto()))
                 .flightEntity(flightEntity)
                 .seatEntity(seatEntity)
                 .reservationNumber(reservationNumber)
                 .flightStatus(FlightStatus.SCHEDULED)
                 .build();
+    }
+
+    private ReservationEntity searchForReservation(ReservationIdentifierRequest reservationIdentifierRequest) {
+        return reservationRepository.findByReservationNumber(
+                reservationIdentifierRequest.getReservationNumber())
+                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(RESERVATION_NOT_FOUND_MESSAGE).code(1L).build());
 
     }
 
-    private PassengerEntity getPassengerEntity(PassengerDto passengerDto) {
-        if(passengerDto.getEmail() == null && passengerDto.getPhoneNumber() == null) {
-            throw InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message("Passenger don't exists").code(1L).build();
-
-        }
-
-        return passengerRepository.getPassengerEntityByEmailAndPhoneNumber(
-                passengerDto.getEmail(),
-                passengerDto.getPhoneNumber());
-    }
-
-    private FlightEntity getFlightEntity(ReservationCreateRequest reservationCreateRequest) {
-
-        AirportEntity flightDeparture = airportService.getAirportByCity(reservationCreateRequest.getFlightDeparture());
-        AirportEntity flightArrival = airportService.getAirportByCity(reservationCreateRequest.getFlightArrival());
-
-        return flightRepository.findByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
-                        flightDeparture,
-                        flightArrival,
-                        reservationCreateRequest.getFlightDate(),
-                        reservationCreateRequest.getFlightDepartureTime())
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(1L).build());
-
-    }
-
-    private SeatEntity getSeatEntity(FlightEntity flightEntity, String seatNumber) {
-
-        return seatRepository.findByFlightEntityAndSeatNumber(flightEntity, seatNumber)
-                .orElseThrow(() -> new RuntimeException("Seat not found"));
+    private ReservationEntity searchForReservation(ReservationUpdateRequest reservationUpdateRequest) {
+        return reservationRepository.findByReservationNumber(
+                reservationUpdateRequest.getReservationNumber())
+                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(RESERVATION_NOT_FOUND_MESSAGE).code(1L).build());
     }
 
 }

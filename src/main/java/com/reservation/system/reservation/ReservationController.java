@@ -3,10 +3,9 @@ package com.reservation.system.reservation;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/reservation")
@@ -20,10 +19,30 @@ public class ReservationController {
         return ResponseEntity.ok(reservationService.createReservation(reservationCreateRequest));
     }
 
-    //TODO dodawanie rezerwacji
+    @GetMapping("/search")
+    public ResponseEntity<ReservationReadResponse> getReservation(@RequestBody ReservationIdentifierRequest reservationIdentifierRequest) {
+        return ResponseEntity.ok(reservationService.getReservation(reservationIdentifierRequest));
+    }
+
+    @GetMapping("/search-all")
+    public ResponseEntity<List<ReservationReadResponse>> getAllReservations() {
+        return ResponseEntity.ok(reservationService.getAllReservations());
+    }
+
+    @PutMapping("/update")
+    public ResponseEntity<ReservationIdentifierResponse> updateReservation(@RequestBody @Valid ReservationUpdateRequest reservationUpdateRequest) {
+        return ResponseEntity.ok(reservationService.updateReservation(reservationUpdateRequest));
+    }
+
+    @DeleteMapping("/delete")
+    public ResponseEntity<ReservationIdentifierResponse> deleteReservation(@RequestBody ReservationIdentifierRequest reservationIdentifierRequest) {
+        return ResponseEntity.ok(reservationService.deleteReservation(reservationIdentifierRequest));
+    }
+
+    //TODO dodawanie rezerwacji done
     //TODO modyfikacja rezerwacji - zmiana dnia wylotu?
     //TODO anulowanie (usuwanie) rezerwacji
-    //TODO odczytywanie danych rezerwacji
+    //TODO odczytywanie danych rezerwacji done
     //TODO sprawdzenie czy wybrane miejsce nie zostało wcześniej zarezerwowane
     //TODO po utworzeniu rezerwacji wysłanie EMAIL! z informacjami o rezerwacji - numer rezerwacji, numer lotu oraz data wylotu
 }

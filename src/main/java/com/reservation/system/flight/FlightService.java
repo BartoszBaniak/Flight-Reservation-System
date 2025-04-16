@@ -1,14 +1,14 @@
 package com.reservation.system.flight;
 
-import com.reservation.system.airport.AirportDto;
 import com.reservation.system.airport.AirportEntity;
-import com.reservation.system.airport.AirportRepository;
+import com.reservation.system.airport.AirportService;
 import com.reservation.system.dictionaries.flightStatus.FlightStatus;
 import com.reservation.system.exceptions.InternalBusinessException;
 import com.reservation.system.flightConnection.FlightConnectionEntity;
-import com.reservation.system.flightConnection.FlightConnectionRepository;
+import com.reservation.system.flightConnection.FlightConnectionService;
+import com.reservation.system.reservation.ReservationCreateRequest;
 import com.reservation.system.seat.SeatEntity;
-import com.reservation.system.seat.SeatRepository;
+import com.reservation.system.seat.SeatService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -16,9 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -30,12 +28,12 @@ public class FlightService {
     public static final String FLIGHT_UPDATED_MESSAGE = "Flight updated successfully";
     public static final String FLIGHT_EXISTS_MESSAGE = "Flight already exists";
     public static final String FLIGHT_NOT_FOUND_MESSAGE = "Flight not found";
-    public static final String AIRPORT_NOT_FOUND_MESSAGE = "Airport not found";
 
     private final FlightRepository flightRepository;
-    private final FlightConnectionRepository flightConnectionRepository;
-    private final AirportRepository airportRepository;
-    private final SeatRepository seatRepository;
+
+    private final AirportService airportService;
+    private final SeatService seatService;
+    private final FlightConnectionService flightConnectionService;
 
     @Transactional
     public FlightCreateResponse createFlight(FlightCreateRequest flightCreateRequest) {
@@ -46,23 +44,20 @@ public class FlightService {
 
         String flightDuration = formatFlightDuration(flightCreateRequest.getFlightDepartureTime(), flightCreateRequest.getFlightArrivalTime());
 
-        AirportEntity flightDeparture = airportRepository.findByAirportCode(flightCreateRequest.getFlightDeparture().getAirportCode())
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(AIRPORT_NOT_FOUND_MESSAGE).code(1L).build());
-
-        AirportEntity flightArrival = airportRepository.findByAirportCode(flightCreateRequest.getFlightArrival().getAirportCode())
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(AIRPORT_NOT_FOUND_MESSAGE).code(1L).build());
-
-        FlightConnectionEntity flightConnectionEntity = createFlightConnectionEntity(flightDeparture, flightArrival);
+        FlightConnectionEntity flightConnectionEntity = flightConnectionService.createFlightConnectionEntity(
+                airportService.getAirportEntityByCode(flightCreateRequest.getFlightDeparture().getAirportCode()),
+                airportService.getAirportEntityByCode(flightCreateRequest.getFlightArrival().getAirportCode()));
 
         flightRepository.save(createFlightEntity(flightCreateRequest, flightDuration, flightConnectionEntity));
-        List<SeatEntity> seatEntities = generateAndGetAvailableSeats(flightCreateRequest.getFlightSeatsNumber(),
+
+        List<SeatEntity> seatEntities = seatService.generateAndGetAvailableSeats(flightCreateRequest.getFlightSeatsNumber(),
                 flightRepository.findByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
-                        flightDeparture,
-                        flightArrival,
+                        flightConnectionEntity.getDepartureAirport(),
+                        flightConnectionEntity.getArrivalAirport(),
                         flightCreateRequest.getFlightDate(),
                         flightCreateRequest.getFlightDepartureTime()).get());
 
-        seatRepository.saveAll(seatEntities);
+        seatService.saveAllSeats(seatEntities);
 
         return FlightCreateResponse.builder().data(FLIGHT_CREATED_MESSAGE).warnings(List.of()).errors(List.of()).build();
     }
@@ -73,12 +68,9 @@ public class FlightService {
         FlightIdentifierRequest flightIdentifierRequest = flightUpdateRequest.getFlightUpdateRequestIdentifier();
         FlightUpdateRequestDto flightUpdateRequestDto = flightUpdateRequest.getFlightUpdateRequestDto();
 
-        AirportEntity departureAirport = getAirportEntityByCode(flightIdentifierRequest.getFlightDeparture().getAirportCode());
-        AirportEntity arrivalAirport = getAirportEntityByCode(flightIdentifierRequest.getFlightArrival().getAirportCode());
-
         FlightEntity existingFlight = flightRepository.findByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
-                        departureAirport,
-                        arrivalAirport,
+                        airportService.getAirportEntityByCode(flightIdentifierRequest.getFlightDeparture().getAirportCode()),
+                        airportService.getAirportEntityByCode(flightIdentifierRequest.getFlightArrival().getAirportCode()),
                         flightIdentifierRequest.getFlightDate(),
                         flightIdentifierRequest.getFlightDepartureTime())
                 .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(2L).build()); //todo przeniesc do private method
@@ -93,13 +85,10 @@ public class FlightService {
     @Transactional
     public FlightIdentifierResponse deleteFlight(FlightIdentifierRequest flightIdentifierRequest) {
 
-        AirportEntity departureAirport = getAirportEntityByCode(flightIdentifierRequest.getFlightDeparture().getAirportCode());
-        AirportEntity arrivalAirport = getAirportEntityByCode(flightIdentifierRequest.getFlightArrival().getAirportCode());
-
         searchForFlight(flightIdentifierRequest);
         flightRepository.deleteByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
-                departureAirport,
-                arrivalAirport,
+                airportService.getAirportEntityByCode(flightIdentifierRequest.getFlightDeparture().getAirportCode()),
+                airportService.getAirportEntityByCode(flightIdentifierRequest.getFlightArrival().getAirportCode()),
                 flightIdentifierRequest.getFlightDate(),
                 flightIdentifierRequest.getFlightDepartureTime()
         );
@@ -131,14 +120,25 @@ public class FlightService {
                 .toList();
     }
 
+    public FlightEntity getFlightEntity(ReservationCreateRequest reservationCreateRequest) {
+
+        AirportEntity flightDeparture = airportService.getAirportByCity(reservationCreateRequest.getFlightDeparture());
+        AirportEntity flightArrival = airportService.getAirportByCity(reservationCreateRequest.getFlightArrival());
+
+        return flightRepository.findByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
+                        flightDeparture,
+                        flightArrival,
+                        reservationCreateRequest.getFlightDate(),
+                        reservationCreateRequest.getFlightDepartureTime())
+                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(1L).build());
+
+    }
+
     private FlightEntity createFlightEntity(FlightCreateRequest flightCreateRequest, String flightDuration, FlightConnectionEntity flightConnectionEntity) {
 
-        AirportEntity departureEntity = getAirportEntityByCode(flightCreateRequest.getFlightDeparture().getAirportCode());
-        AirportEntity arrivalEntity = getAirportEntityByCode(flightCreateRequest.getFlightArrival().getAirportCode());
-
         return FlightEntity.builder()
-                .flightDeparture(departureEntity)
-                .flightArrival(arrivalEntity)
+                .flightDeparture(flightConnectionEntity.getDepartureAirport())
+                .flightArrival(flightConnectionEntity.getArrivalAirport())
                 .flightDepartureTime(flightCreateRequest.getFlightDepartureTime())
                 .flightArrivalTime(flightCreateRequest.getFlightArrivalTime())
                 .flightDuration(flightDuration)
@@ -150,81 +150,18 @@ public class FlightService {
                 .build();
     }
 
-    private FlightConnectionEntity createFlightConnection(AirportEntity flightDeparture, AirportEntity flightArrival) {
-        return flightConnectionRepository.findByDepartureAirportAndArrivalAirport(flightDeparture, flightArrival)
-                .orElseGet(() -> {
-                    String flightNumber = generateFlightNumber(flightDeparture, flightArrival);
-
-                    FlightConnectionEntity newConnection = FlightConnectionEntity.builder()
-                            .departureAirport(flightDeparture)
-                            .arrivalAirport(flightArrival)
-                            .flightNumber(flightNumber)
-                            .build();
-
-                    return flightConnectionRepository.save(newConnection);
-                });
-    }
-
-    private FlightConnectionEntity createFlightConnectionEntity(AirportEntity flightDeparture, AirportEntity flightArrival) {
-
-        return flightConnectionRepository.findByDepartureAirportAndArrivalAirport(flightDeparture, flightArrival)
-                .orElseGet(() -> {
-                    String flightNumber = generateFlightNumber(flightDeparture, flightArrival);
-
-                    FlightConnectionEntity newConnection = FlightConnectionEntity.builder()
-                            .departureAirport(flightDeparture)
-                            .arrivalAirport(flightArrival)
-                            .flightNumber(flightNumber)
-                            .build();
-
-                    return flightConnectionRepository.save(newConnection);
-                });
-
-    }
-
-    private String generateFlightNumber(AirportEntity flightDeparture, AirportEntity flightArrival) {
-
-        Optional<FlightConnectionEntity> existingConnection = flightConnectionRepository.findByDepartureAirportAndArrivalAirport(flightDeparture, flightArrival);
-
-        if(existingConnection.isPresent()) {
-            return existingConnection.get().getFlightNumber();
-        }
-
-        int nextFlightNumber = getNextFlightNumber();
-
-        return "LO" + nextFlightNumber;
-
-    }
-
-    private int getNextFlightNumber() {
-
-        Optional<FlightConnectionEntity> latestConnection = flightConnectionRepository.findTopByOrderByFlightNumberDesc();
-
-        if(latestConnection.isPresent()) {
-            String latestFlightNumber = latestConnection.get().getFlightNumber();
-            return  Integer.parseInt(latestFlightNumber.substring(2)) + 1;
-
-        } else {
-            return 100;
-        }
-    }
-
     private void updateFlightEntity(FlightEntity existingFlight, FlightUpdateRequestDto flightUpdateRequestDto, String flightDuration) {
 
-
-        AirportEntity departureEntity = getAirportEntityByCode(flightUpdateRequestDto.getFlightDeparture().getAirportCode());
-        AirportEntity arrivalEntity = getAirportEntityByCode(flightUpdateRequestDto.getFlightArrival().getAirportCode());
-
-        FlightConnectionEntity flightConnection = createFlightConnection(departureEntity, arrivalEntity);
-
-        existingFlight.setFlightConnection(flightConnection);
-        existingFlight.setFlightDeparture(departureEntity);
-        existingFlight.setFlightArrival(arrivalEntity);
+        existingFlight.setFlightConnection(
+                flightConnectionService.createFlightConnection(
+                        airportService.getAirportEntityByCode(flightUpdateRequestDto.getFlightDeparture().getAirportCode()),
+                        airportService.getAirportEntityByCode(flightUpdateRequestDto.getFlightArrival().getAirportCode())));
+        existingFlight.setFlightDeparture(airportService.getAirportEntityByCode(flightUpdateRequestDto.getFlightDeparture().getAirportCode()));
+        existingFlight.setFlightArrival(airportService.getAirportEntityByCode(flightUpdateRequestDto.getFlightArrival().getAirportCode()));
         existingFlight.setFlightDepartureTime(flightUpdateRequestDto.getFlightDepartureTime());
         existingFlight.setFlightArrivalTime(flightUpdateRequestDto.getFlightArrivalTime());
         existingFlight.setFlightDuration(flightDuration);
         existingFlight.setFlightDate(flightUpdateRequestDto.getFlightDate());
-        //existingFlight.setFlightType(flightUpdateRequestDto.getFlightType()); // jak masz flightType, odkomentuj
         existingFlight.setFlightSeatsNumber(flightUpdateRequestDto.getFlightSeatsNumber());
     }
 
@@ -238,11 +175,9 @@ public class FlightService {
 
     private boolean checkIfFlightExists(FlightCreateRequest flightCreateRequest) {
 
-        AirportEntity departureAirport = getAirportEntityByCode(flightCreateRequest.getFlightDeparture().getAirportCode());
-        AirportEntity arrivalAirport = getAirportEntityByCode(flightCreateRequest.getFlightArrival().getAirportCode());
-
-
-        FlightConnectionEntity flightConnection = createFlightConnection(departureAirport, arrivalAirport);
+        FlightConnectionEntity flightConnection = flightConnectionService.createFlightConnection(
+                airportService.getAirportEntityByCode(flightCreateRequest.getFlightDeparture().getAirportCode()),
+                airportService.getAirportEntityByCode(flightCreateRequest.getFlightArrival().getAirportCode()));
 
         if(flightConnection != null) {
             return flightRepository.existsByFlightConnectionAndFlightDateAndFlightDepartureTime(
@@ -256,32 +191,19 @@ public class FlightService {
 
     private FlightEntity searchForFlight(FlightIdentifierRequest flightIdentifierRequest) {
 
-        AirportEntity departureAirport = getAirportEntityByCode(flightIdentifierRequest.getFlightDeparture().getAirportCode());
-        AirportEntity arrivalAirport = getAirportEntityByCode(flightIdentifierRequest.getFlightArrival().getAirportCode());
-
         return flightRepository.findByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
-                        departureAirport,
-                        arrivalAirport,
+                        airportService.getAirportEntityByCode(flightIdentifierRequest.getFlightDeparture().getAirportCode()),
+                        airportService.getAirportEntityByCode(flightIdentifierRequest.getFlightArrival().getAirportCode()),
                         flightIdentifierRequest.getFlightDate(),
                         flightIdentifierRequest.getFlightDepartureTime())
                 .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(1L).build());
     }
 
-
-    private AirportDto mapToAirportDto(AirportEntity airportEntity) {
-
-        return AirportDto.builder()
-                .airportCity(airportEntity.getAirportCity())
-                .airportCode(airportEntity.getAirportCode())
-                .build();
-
-    }
-
     private FlightDto mapToFlightDto(FlightEntity flightEntity) {
 
         return FlightDto.builder()
-                .flightDeparture(mapToAirportDto(flightEntity.getFlightDeparture()))
-                .flightArrival(mapToAirportDto(flightEntity.getFlightArrival()))
+                .flightDeparture(airportService.mapToAirportDto(flightEntity.getFlightDeparture()))
+                .flightArrival(airportService.mapToAirportDto(flightEntity.getFlightArrival()))
                 .flightDepartureTime(flightEntity.getFlightDepartureTime())
                 .flightArrivalTime(flightEntity.getFlightArrivalTime())
                 .flightDuration(flightEntity.getFlightDuration())
@@ -291,39 +213,6 @@ public class FlightService {
                 .flightStatus(flightEntity.getFlightStatus())
                 .flightSeatsNumber(flightEntity.getFlightSeatsNumber())
                 .build();
-    }
-
-    private AirportEntity getAirportEntityByCode(String airportCode) {
-        return airportRepository.findByAirportCode(airportCode)
-                .orElseThrow(() -> InternalBusinessException.builder()
-                        .type(HttpStatus.BAD_REQUEST)
-                        .message(AIRPORT_NOT_FOUND_MESSAGE)
-                        .code(1L).build());
-    }
-
-    private List<SeatEntity> generateAndGetAvailableSeats(int seatsNumber, FlightEntity flightEntity) {
-
-        List<SeatEntity> seatEntities = new ArrayList<>();
-        int fullSeatsRows = seatsNumber / 6;
-        int remainingSeats = seatsNumber % 6;
-
-        for(int i = 1; i <= fullSeatsRows; i++) {
-            for(char seatLetter = 'A'; seatLetter <= 'F'; seatLetter++) {
-                String seatNumber = String.valueOf(i) + seatLetter;
-                seatEntities.add(SeatEntity.builder().flightEntity(flightEntity).seatNumber(seatNumber).isAvailable(true).build());
-            }
-        }
-
-        if(remainingSeats > 0) {
-            for(int i = fullSeatsRows + 1; i <= fullSeatsRows + remainingSeats; i++) {
-                for(char seatLetter = 'A'; seatLetter <= 'F'; seatLetter++) {
-                    String seatNumber = String.valueOf(i) + seatLetter;
-                    seatEntities.add(SeatEntity.builder().flightEntity(flightEntity).seatNumber(seatNumber).isAvailable(true).build());
-                }
-            }
-        }
-
-        return seatEntities;
     }
 
 }

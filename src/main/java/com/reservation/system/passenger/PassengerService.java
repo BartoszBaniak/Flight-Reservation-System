@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -17,6 +18,7 @@ public class PassengerService {
     public static final String PASSENGER_NOT_FOUND_MESSAGE = "Passenger not found.";
     public static final String PASSENGER_DELETED_MESSAGE = "Passenger deleted successfully";
     public static final String PASSENGER_UPDATE_MESSAGE = "Passenger updated successfully";
+
     private final PassengerRepository passengerRepository;
 
     @Transactional
@@ -78,6 +80,20 @@ public class PassengerService {
                         .errors(List.of())
                         .build())
                 .toList();
+    }
+
+    public PassengerEntity getPassengerEntity(PassengerDto passengerDto) {
+        if(StringUtils.isEmpty(passengerDto.getEmail()) && StringUtils.isEmpty(passengerDto.getPhoneNumber())) {
+            throw InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message("Passenger don't exists").code(1L).build();
+        }
+
+        return passengerRepository.getPassengerEntityByEmailAndPhoneNumber(
+                passengerDto.getEmail(),
+                passengerDto.getPhoneNumber());
+    }
+
+    public PassengerEntity savePassenger(PassengerEntity passengerEntity) {
+        return passengerRepository.save(passengerEntity);
     }
 
     private void updatePassengerEntity(PassengerEntity existingPassenger, PassengerRequestDto passengerRequestDto) {
