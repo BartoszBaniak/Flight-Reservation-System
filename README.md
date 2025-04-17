@@ -2,7 +2,7 @@
 
 A simple flight reservation system built with Spring Boot, PostgreSQL and Docker
 
-## Instalation and Running
+## Installation and Running
 
 1. Clone the repository:
 
