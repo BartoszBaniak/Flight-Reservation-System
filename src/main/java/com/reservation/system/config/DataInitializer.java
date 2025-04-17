@@ -26,7 +26,13 @@ public class DataInitializer {
                     new AirportEntity("CPH", "Copenhagen"),
                     new AirportEntity("ZRH", "Zurich")
             );
-            airportRepository.saveAll(airportEntities);
+
+            airportEntities.forEach(airport -> {
+                if(!airportRepository.existsAirportEntityByAirportCode(airport.getAirportCode())) {
+                    airportRepository.save(airport);
+                }
+            });
+
             System.out.println("wygenerowano baze danych");
         };
     }

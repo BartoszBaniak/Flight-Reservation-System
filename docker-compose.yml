@@ -5,7 +5,7 @@ services:
     image: postgres:15
     container_name: reservation_postgres
     environment:
-      POSTGRES_DB: reservation_test
+      POSTGRES_DB: reservation_sys
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: baniak2002
     ports:
@@ -22,7 +22,7 @@ services:
     depends_on:
       - db
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/reservation_system
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/reservation_sys
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: baniak2002
     ports:
