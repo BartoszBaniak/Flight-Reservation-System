@@ -1,5 +1,6 @@
 package com.reservation.system.passenger;
 
+import com.reservation.system.exceptions.ErrorEnum;
 import com.reservation.system.exceptions.InternalBusinessException;
 import com.reservation.system.reservation.ReservationEntity;
 import com.reservation.system.seat.SeatEntity;
@@ -29,7 +30,7 @@ public class PassengerService {
     @Transactional
     public PassengerCreateResponse createPassenger(PassengerDto passengerRequestDto) {
         if(checkIfPassengerExists(passengerRequestDto)) {
-            throw InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(PASSENGER_EXIST_MESSAGE).code(1L).build();
+            throw InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(PASSENGER_EXIST_MESSAGE).code(ErrorEnum.PASSENGER_EXIST.getErrorCode()).build();
         }
         passengerRepository.save(createPassengerEntity(passengerRequestDto));
 
@@ -40,33 +41,18 @@ public class PassengerService {
     public PassengerIdentifierResponse deletePassenger(PassengerIdentifierRequest passengerIdentifierRequest) {
 
         searchForPassenger(passengerIdentifierRequest);
-        List<ReservationEntity> reservationEntities = searchForPassenger(passengerIdentifierRequest).getReservations();
-
-        for(ReservationEntity reservationEntity : reservationEntities) {
-            SeatEntity seatEntity = reservationEntity.getSeatEntity();
-            seatEntity.setAvailable(true);
-            seatService.saveSeat(seatEntity);
-        }
-
-        passengerRepository.deleteByEmailAndPhoneNumber(
-                passengerIdentifierRequest.getEmail(),
-                passengerIdentifierRequest.getPhoneNumber()
-        );
+        deleteAllPassengerReservations(passengerIdentifierRequest);
 
         return PassengerIdentifierResponse.builder().data(PASSENGER_DELETED_MESSAGE).warnings(List.of()).errors(List.of()).build();
     }
+
 
     @Transactional
     public PassengerIdentifierResponse updatePassenger(PassengerUpdateRequest passengerUpdateRequest) {
 
         PassengerIdentifierRequest passengerIdentifierRequest = passengerUpdateRequest.getPassengerIdentifierRequest();
         PassengerDto passengerRequestDto = passengerUpdateRequest.getPassengerRequestDto();
-
-        PassengerEntity existingPassenger = passengerRepository.findByEmailAndPhoneNumber(
-                passengerIdentifierRequest.getEmail(),
-                passengerIdentifierRequest.getPhoneNumber())
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(PASSENGER_NOT_FOUND_MESSAGE).code(2L).build());
-
+        PassengerEntity  existingPassenger = searchForPassenger(passengerIdentifierRequest);
         updatePassengerEntity(existingPassenger, passengerRequestDto);
 
         return PassengerIdentifierResponse.builder().data(PASSENGER_UPDATE_MESSAGE).warnings(List.of()).errors(List.of()).build();
@@ -97,28 +83,41 @@ public class PassengerService {
 
     public PassengerEntity getPassengerEntity(PassengerDto passengerDto) {
         if(StringUtils.isEmpty(passengerDto.getEmail()) && StringUtils.isEmpty(passengerDto.getPhoneNumber())) {
-            throw InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(PASSENGER_NOT_FOUND_MESSAGE).code(1L).build();
+            throw InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(PASSENGER_NOT_FOUND_MESSAGE).code(ErrorEnum.PASSENGER_NOT_FOUND.getErrorCode()).build();
         }
 
-        return passengerRepository.getPassengerEntityByEmailAndPhoneNumber(
-                passengerDto.getEmail(),
-                passengerDto.getPhoneNumber());
+        return passengerRepository.getPassengerEntityByEmail(
+                passengerDto.getEmail()
+                );
     }
 
 
     public void searchForPassenger(PassengerDto passengerRequestDto) {
         passengerRepository.findByEmailAndPhoneNumber(passengerRequestDto.getEmail(), passengerRequestDto.getPhoneNumber())
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(PASSENGER_NOT_FOUND_MESSAGE).code(1L).build());
+                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(PASSENGER_NOT_FOUND_MESSAGE).code(ErrorEnum.PASSENGER_NOT_FOUND.getErrorCode()).build());
     }
 
     public void savePassenger(PassengerEntity passengerEntity) {
         passengerRepository.save(passengerEntity);
     }
 
+    private void deleteAllPassengerReservations(PassengerIdentifierRequest passengerIdentifierRequest) {
+        List<ReservationEntity> reservationEntities = searchForPassenger(passengerIdentifierRequest).getReservations();
+
+        for(ReservationEntity reservationEntity : reservationEntities) {
+            SeatEntity seatEntity = reservationEntity.getSeatEntity();
+            seatEntity.setAvailable(true);
+            seatService.saveSeat(seatEntity);
+        }
+
+        passengerRepository.deleteByEmail(
+                passengerIdentifierRequest.getEmail()
+        );
+    }
+
     private void updatePassengerEntity(PassengerEntity existingPassenger, PassengerDto passengerRequestDto) {
         existingPassenger.setFirstName(passengerRequestDto.getFirstName());
         existingPassenger.setLastName(passengerRequestDto.getLastName());
-        existingPassenger.setEmail(passengerRequestDto.getEmail());
         existingPassenger.setPhoneNumber(passengerRequestDto.getPhoneNumber());
     }
 
@@ -132,10 +131,13 @@ public class PassengerService {
     }
 
     private PassengerEntity searchForPassenger(PassengerIdentifierRequest passengerIdentifierRequest) {
-        return passengerRepository.findByEmailAndPhoneNumber(
-                passengerIdentifierRequest.getEmail(),
-                passengerIdentifierRequest.getPhoneNumber())
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(PASSENGER_NOT_FOUND_MESSAGE).code(1L).build());
+
+        return passengerRepository.findByEmail(passengerIdentifierRequest.getEmail())
+                .orElseThrow(() -> InternalBusinessException.builder()
+                        .type(HttpStatus.BAD_REQUEST)
+                        .message(PASSENGER_NOT_FOUND_MESSAGE)
+                        .code(ErrorEnum.PASSENGER_NOT_FOUND.getErrorCode())
+                        .build());
     }
 
     private boolean checkIfPassengerExists(PassengerDto passengerRequestDto) {

@@ -1,5 +1,6 @@
 package com.reservation.system.airport;
 
+import com.reservation.system.exceptions.ErrorEnum;
 import com.reservation.system.exceptions.InternalBusinessException;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,9 +15,8 @@ public class AirportService {
     private final AirportRepository airportRepository;
 
     public AirportEntity getAirportByCity(String airportCity) {
-
         return airportRepository.findByAirportCity(airportCity)
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(AIRPORT_NOT_FOUND_MESSAGE).code(1L).build());
+                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(AIRPORT_NOT_FOUND_MESSAGE).code(ErrorEnum.AIRPORT_NOT_FOUND.getErrorCode()).build());
     }
 
     public AirportEntity getAirportEntityByCode(String airportCode) {
@@ -28,7 +28,6 @@ public class AirportService {
     }
 
     public AirportDto mapToAirportDto(AirportEntity airportEntity) {
-
         return AirportDto.builder()
                 .airportCity(airportEntity.getAirportCity())
                 .airportCode(airportEntity.getAirportCode())

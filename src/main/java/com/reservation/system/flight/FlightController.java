@@ -40,6 +40,4 @@ public class FlightController {
         return ResponseEntity.ok(flightService.updateFlight(flightUpdateRequest));
     }
 
-    //TODO numery lotów i lotniska do oddzielnych entity - nie słowniki!
-    //TODO dodawanie lotów - tworzenie nowego lotu ------- trzeba dodac uwzględnienie zmiany dnia i dodac automatyczne przypisywanie numeru lotu
 }

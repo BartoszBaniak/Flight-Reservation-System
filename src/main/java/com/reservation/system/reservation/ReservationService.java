@@ -1,9 +1,15 @@
 package com.reservation.system.reservation;
 
+import com.reservation.system.airport.AirportService;
 import com.reservation.system.dictionaries.flightStatus.FlightStatus;
+import com.reservation.system.email.EmailSender;
+import com.reservation.system.email.EmailService;
+import com.reservation.system.exceptions.ErrorEnum;
 import com.reservation.system.exceptions.InternalBusinessException;
 import com.reservation.system.flight.FlightEntity;
 import com.reservation.system.flight.FlightService;
+import com.reservation.system.flightConnection.FlightConnectionEntity;
+import com.reservation.system.flightConnection.FlightConnectionService;
 import com.reservation.system.passenger.PassengerEntity;
 import com.reservation.system.passenger.PassengerService;
 import com.reservation.system.seat.SeatEntity;
@@ -13,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
@@ -27,8 +34,11 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
 
     private final FlightService flightService;
+    private final FlightConnectionService flightConnectionService;
+    private final AirportService airportService;
     private final SeatService seatService;
     private final PassengerService passengerService;
+    private final EmailService emailService;
 
     @Transactional
     public ReservationCreateResponse createReservation(ReservationCreateRequest reservationCreateRequest) {
@@ -41,35 +51,8 @@ public class ReservationService {
     @Transactional
     public ReservationIdentifierResponse updateReservation(ReservationUpdateRequest reservationUpdateRequest) {
 
-        ReservationEntity reservationEntity = searchForReservation(reservationUpdateRequest);
-        FlightEntity flightEntity = reservationEntity.getFlightEntity();
-
-        if(!reservationEntity.getSeatEntity().getSeatNumber().equals(reservationUpdateRequest.getSeatNumber())) {
-            SeatEntity seatEntity = seatService.getSeatEntity(flightEntity, reservationUpdateRequest.getSeatNumber());
-
-            seatService.checkIfSeatIsAvailable(seatEntity);
-
-            reservationEntity.getSeatEntity().setAvailable(true);
-            seatService.saveSeat(reservationEntity.getSeatEntity());
-
-            seatEntity.setAvailable(false);
-            seatService.saveSeat(seatEntity);
-
-            reservationEntity.setSeatEntity(seatEntity);
-        }
-
-        PassengerEntity passengerEntity = passengerService.getPassengerEntity(reservationUpdateRequest.getPassengerDto());
-
-        if(!reservationUpdateRequest.getPassengerDto().getPhoneNumber().equals(passengerEntity.getPhoneNumber())) {
-
-            passengerEntity.setPhoneNumber(reservationUpdateRequest.getPassengerDto().getPhoneNumber());
-        }
-
-        if(!reservationUpdateRequest.getPassengerDto().getEmail().equals(passengerEntity.getEmail())) {
-            passengerEntity.setEmail(reservationUpdateRequest.getPassengerDto().getEmail());
-        }
-
-        passengerService.savePassenger(passengerEntity);
+        updateSeatInReservation(reservationUpdateRequest);
+        updatePassengersDataInReservation(reservationUpdateRequest);
 
         return ReservationIdentifierResponse.builder()
                 .data(RESERVATION_UPDATED_MESSAGE)
@@ -92,6 +75,7 @@ public class ReservationService {
                 .build();
     }
 
+
     public ReservationReadResponse getReservation(ReservationIdentifierRequest reservationIdentifierRequest) {
 
         return ReservationReadResponse.builder()
@@ -111,6 +95,41 @@ public class ReservationService {
                         .build())
                 .toList();
     }
+
+    private void updateSeatInReservation(ReservationUpdateRequest reservationUpdateRequest) {
+
+        ReservationEntity reservationEntity = searchForReservation(reservationUpdateRequest);
+        FlightEntity flightEntity = reservationEntity.getFlightEntity();
+
+        if(!reservationEntity.getSeatEntity().getSeatNumber().equals(reservationUpdateRequest.getSeatNumber())) {
+            SeatEntity seatEntity = seatService.getSeatEntity(flightEntity, reservationUpdateRequest.getSeatNumber());
+
+            seatService.checkIfSeatIsAvailable(seatEntity);
+
+            reservationEntity.getSeatEntity().setAvailable(true);
+            seatService.saveSeat(reservationEntity.getSeatEntity());
+
+            seatEntity.setAvailable(false);
+            seatService.saveSeat(seatEntity);
+
+            reservationEntity.setSeatEntity(seatEntity);
+        }
+    }
+
+    private void updatePassengersDataInReservation(ReservationUpdateRequest reservationUpdateRequest) {
+        PassengerEntity passengerEntity = passengerService.getPassengerEntity(reservationUpdateRequest.getPassengerDto());
+
+        if(reservationUpdateRequest.getPassengerDto().getEmail().equals(passengerEntity.getEmail())) {
+
+            passengerEntity.setFirstName(reservationUpdateRequest.getPassengerDto().getFirstName());
+            passengerEntity.setLastName(reservationUpdateRequest.getPassengerDto().getLastName());
+            passengerEntity.setPhoneNumber(reservationUpdateRequest.getPassengerDto().getPhoneNumber());
+        }
+
+        passengerService.savePassenger(passengerEntity);
+    }
+
+
 
     private ReservationDto mapToReservationDto(ReservationEntity reservationEntity) {
         return ReservationDto.builder()
@@ -139,6 +158,20 @@ public class ReservationService {
 
         Long reservationNumber = reservationRepository.findMaxReservationNumber() + 1;
 
+        FlightConnectionEntity flightConnectionEntity = flightConnectionService.createFlightConnection(
+                airportService.getAirportByCity(reservationCreateRequest.getFlightDeparture()),
+                airportService.getAirportByCity(reservationCreateRequest.getFlightArrival()));
+
+        String htmlContent = emailService.readHtmlContent("templates/emails/reservation_confirmation.html");
+        htmlContent = htmlContent.replace("%FIRST_NAME%", reservationCreateRequest.getPassengerDto().getFirstName());
+        htmlContent = htmlContent.replace("%LAST_NAME%", reservationCreateRequest.getPassengerDto().getLastName());
+        htmlContent = htmlContent.replace("%RESERVATION_NUMBER%", reservationNumber.toString());
+        htmlContent = htmlContent.replace("%FLIGHT_NUMBER%", flightConnectionEntity.getFlightNumber());
+        htmlContent = htmlContent.replace("%DEPARTURE_DATE%", reservationCreateRequest.getFlightDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        htmlContent = htmlContent.replace("%DEPARTURE_TIME%", reservationCreateRequest.getFlightDepartureTime().format(DateTimeFormatter.ofPattern("HH:mm")));
+
+        emailService.sendEmail(reservationCreateRequest.getPassengerDto().getEmail(), htmlContent, "Reservation Confirmation");
+
         return ReservationEntity.builder()
                 .passengerEntity(passengerService.getPassengerEntity(reservationCreateRequest.getPassengerDto()))
                 .flightEntity(flightEntity)
@@ -151,14 +184,14 @@ public class ReservationService {
     private ReservationEntity searchForReservation(ReservationIdentifierRequest reservationIdentifierRequest) {
         return reservationRepository.findByReservationNumber(
                 reservationIdentifierRequest.getReservationNumber())
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(RESERVATION_NOT_FOUND_MESSAGE).code(1L).build());
+                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(RESERVATION_NOT_FOUND_MESSAGE).code(ErrorEnum.RESERVATION_NOT_FOUND.getErrorCode()).build());
 
     }
 
     private ReservationEntity searchForReservation(ReservationUpdateRequest reservationUpdateRequest) {
         return reservationRepository.findByReservationNumber(
                 reservationUpdateRequest.getReservationNumber())
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(RESERVATION_NOT_FOUND_MESSAGE).code(1L).build());
+                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(RESERVATION_NOT_FOUND_MESSAGE).code(ErrorEnum.RESERVATION_NOT_FOUND.getErrorCode()).build());
     }
 
 }

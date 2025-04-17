@@ -3,6 +3,7 @@ package com.reservation.system.flight;
 import com.reservation.system.airport.AirportEntity;
 import com.reservation.system.airport.AirportService;
 import com.reservation.system.dictionaries.flightStatus.FlightStatus;
+import com.reservation.system.exceptions.ErrorEnum;
 import com.reservation.system.exceptions.InternalBusinessException;
 import com.reservation.system.flightConnection.FlightConnectionEntity;
 import com.reservation.system.flightConnection.FlightConnectionService;
@@ -39,12 +40,14 @@ public class FlightService {
     public FlightCreateResponse createFlight(FlightCreateRequest flightCreateRequest) {
 
         if(checkIfFlightExists(flightCreateRequest)) {
-            throw InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_EXISTS_MESSAGE).code(1L).build();
+            throw InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_EXISTS_MESSAGE).code(ErrorEnum.FLIGHT_EXIST.getErrorCode()).build();
         }
 
         String flightDuration = formatFlightDuration(flightCreateRequest.getFlightDepartureTime(), flightCreateRequest.getFlightArrivalTime());
 
-        FlightConnectionEntity flightConnectionEntity = flightConnectionService.createFlightConnectionEntity(
+
+
+        FlightConnectionEntity flightConnectionEntity = flightConnectionService.createFlightConnection(
                 airportService.getAirportEntityByCode(flightCreateRequest.getFlightDeparture().getAirportCode()),
                 airportService.getAirportEntityByCode(flightCreateRequest.getFlightArrival().getAirportCode()));
 
@@ -73,7 +76,7 @@ public class FlightService {
                         airportService.getAirportEntityByCode(flightIdentifierRequest.getFlightArrival().getAirportCode()),
                         flightIdentifierRequest.getFlightDate(),
                         flightIdentifierRequest.getFlightDepartureTime())
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(2L).build()); //todo przeniesc do private method
+                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(ErrorEnum.FLIGHT_NOT_FOUND.getErrorCode()).build()); //todo przeniesc do private method
 
         seatService.deleteSeatsByFlight(existingFlight);
         seatService.refreshSeatsForFlight(existingFlight, flightUpdateRequestDto.getFlightSeatsNumber());
@@ -136,7 +139,7 @@ public class FlightService {
                         flightArrival,
                         reservationCreateRequest.getFlightDate(),
                         reservationCreateRequest.getFlightDepartureTime())
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(1L).build());
+                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(ErrorEnum.FLIGHT_NOT_FOUND.getErrorCode()).build());
 
     }
 
@@ -147,7 +150,7 @@ public class FlightService {
                         airportService.getAirportEntityByCode(flightIdentifierRequest.getFlightArrival().getAirportCode()),
                         flightIdentifierRequest.getFlightDate(),
                         flightIdentifierRequest.getFlightDepartureTime())
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(1L).build());
+                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(ErrorEnum.FLIGHT_NOT_FOUND.getErrorCode()).build());
     }
 
     private FlightEntity createFlightEntity(FlightCreateRequest flightCreateRequest, String flightDuration, FlightConnectionEntity flightConnectionEntity) {
@@ -182,10 +185,17 @@ public class FlightService {
     }
 
     private String formatFlightDuration(LocalTime departureTime, LocalTime arrivalTime) {
+
         Duration duration = Duration.between(departureTime, arrivalTime);
         long durationInMinutes = duration.toMinutes();
+
+        if(durationInMinutes < 0) {
+            durationInMinutes = durationInMinutes + 1440;
+        }
+
         int hours = (int) (durationInMinutes / 60);
         int minutes = (int) (durationInMinutes % 60);
+
         return String.format(TIME_STRING, hours, minutes);
     }
 
@@ -196,10 +206,11 @@ public class FlightService {
                 airportService.getAirportEntityByCode(flightCreateRequest.getFlightArrival().getAirportCode()));
 
         if(flightConnection != null) {
-            return flightRepository.existsByFlightConnectionAndFlightDateAndFlightDepartureTime(
+            return flightRepository.existsByFlightConnectionAndFlightDateAndFlightDepartureTimeAndFlightArrivalTime(
                     flightConnection,
                     flightCreateRequest.getFlightDate(),
-                    flightCreateRequest.getFlightDepartureTime());
+                    flightCreateRequest.getFlightDepartureTime(),
+                    flightCreateRequest.getFlightArrivalTime());
         }
 
         return false;

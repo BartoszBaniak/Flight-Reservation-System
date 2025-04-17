@@ -1,11 +1,8 @@
 package com.reservation.system.seat;
 
-import com.reservation.system.airport.AirportService;
+import com.reservation.system.exceptions.ErrorEnum;
 import com.reservation.system.exceptions.InternalBusinessException;
 import com.reservation.system.flight.FlightEntity;
-import com.reservation.system.flight.FlightIdentifierRequest;
-import com.reservation.system.flight.FlightService;
-import com.reservation.system.passenger.PassengerEntity;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -34,7 +31,7 @@ public class SeatService {
     public SeatEntity getSeatEntity(FlightEntity flightEntity, String seatNumber) {
 
         return seatRepository.findByFlightEntityAndSeatNumber(flightEntity, seatNumber)
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(SEAT_NOT_FOUND_MESSAGE).code(1L).build());
+                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(SEAT_NOT_FOUND_MESSAGE).code(ErrorEnum.SEAT_NOT_FOUND.getErrorCode()).build());
     }
 
     public List<SeatEntity> generateAndGetAvailableSeats(int seatsNumber, FlightEntity flightEntity) {
@@ -58,7 +55,7 @@ public class SeatService {
 
     public void checkIfSeatIsAvailable(SeatEntity seatEntity) {
         if(!seatEntity.isAvailable()) {
-            throw InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(SEAT_RESERVED_MESSAGE).code(1L).build();
+            throw InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(SEAT_RESERVED_MESSAGE).code(ErrorEnum.SEAT_RESERVED.getErrorCode()).build();
         }
     }
 
@@ -71,10 +68,6 @@ public class SeatService {
         seatRepository.deleteByFlightEntity(flightEntity);
         List<SeatEntity> seatEntities = generateAndGetAvailableSeats(seatsNumber, flightEntity);
         saveAllSeats(seatEntities);
-    }
-
-    public void relaseAllSeatsForPassenger(PassengerEntity passengerEntity) {
-
     }
 
 }

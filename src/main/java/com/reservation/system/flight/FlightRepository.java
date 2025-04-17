@@ -1,6 +1,5 @@
 package com.reservation.system.flight;
 
-import com.reservation.system.airport.AirportDto;
 import com.reservation.system.airport.AirportEntity;
 import com.reservation.system.flightConnection.FlightConnectionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,10 +13,11 @@ import java.time.LocalTime;
 @Repository
 public interface FlightRepository extends JpaRepository<FlightEntity, Integer> {
 
-    boolean existsByFlightConnectionAndFlightDateAndFlightDepartureTime(
+    boolean existsByFlightConnectionAndFlightDateAndFlightDepartureTimeAndFlightArrivalTime(
             FlightConnectionEntity flightConnection,
             LocalDate flightDate,
-            LocalTime flightDepartureTime
+            LocalTime flightDepartureTime,
+            LocalTime flightArrivalTime
     );
 
     Optional<FlightEntity> findByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(

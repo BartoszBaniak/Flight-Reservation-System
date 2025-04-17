@@ -9,12 +9,6 @@ import java.util.Optional;
 @Repository
 public interface FlightConnectionRepository extends JpaRepository<FlightConnectionEntity, Integer> {
 
-    Optional<FlightConnectionEntity> findByFlightNumberAndDepartureAirportAndArrivalAirport(
-            String flightNumber,
-            AirportEntity departureAirport,
-            AirportEntity arrivalAirport
-    );
-
     Optional<FlightConnectionEntity> findByDepartureAirportAndArrivalAirport(
             AirportEntity departureAirport,
             AirportEntity arrivalAirport

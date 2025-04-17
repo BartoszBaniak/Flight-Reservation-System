@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flight Reservation Confirmation</title>
+  <style>
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .content {
+      padding: 20px;
+      background-color: #f9f9f9;
+      border-radius: 10px;
+    }
+    .info {
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .highlight {
+      font-weight: bold;
+      color: #007bff;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Your Flight Reservation is Confirmed</h1>
+  </div>
+  <div class="content">
+    <p>Hello <span class="highlight">%FIRST_NAME% %LAST_NAME%</span>,</p>
+    <p>Thank you for booking your flight with us. Below are the details of your reservation:</p>
+    <div class="info">
+      Reservation Number: <span class="highlight">%RESERVATION_NUMBER%</span><br>
+      Flight Number: <span class="highlight">%FLIGHT_NUMBER%</span><br>
+      Departure Date: <span class="highlight">%DEPARTURE_DATE%</span><br>
+      Departure Time: <span class="highlight">%DEPARTURE_TIME%</span>
+    </div>
+    <p>Please keep this information safe – you'll need it during check-in.</p>
+    <p>We wish you a pleasant flight!</p>
+  </div>
+</div>
+</body>
+</html>

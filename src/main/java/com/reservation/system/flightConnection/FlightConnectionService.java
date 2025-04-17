@@ -27,23 +27,6 @@ public class FlightConnectionService {
                 });
     }
 
-    public FlightConnectionEntity createFlightConnectionEntity(AirportEntity flightDeparture, AirportEntity flightArrival) {
-
-        return flightConnectionRepository.findByDepartureAirportAndArrivalAirport(flightDeparture, flightArrival)
-                .orElseGet(() -> {
-                    String flightNumber = generateFlightNumber(flightDeparture, flightArrival);
-
-                    FlightConnectionEntity newConnection = FlightConnectionEntity.builder()
-                            .departureAirport(flightDeparture)
-                            .arrivalAirport(flightArrival)
-                            .flightNumber(flightNumber)
-                            .build();
-
-                    return flightConnectionRepository.save(newConnection);
-                });
-
-    }
-
     public String generateFlightNumber(AirportEntity flightDeparture, AirportEntity flightArrival) {
 
         Optional<FlightConnectionEntity> existingConnection = flightConnectionRepository.findByDepartureAirportAndArrivalAirport(flightDeparture, flightArrival);

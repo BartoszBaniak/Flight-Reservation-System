@@ -18,6 +18,10 @@ public interface PassengerRepository extends JpaRepository<PassengerEntity, Inte
             String phoneNumber
     );
 
+    Optional<PassengerEntity> findByEmail(
+            String email
+    );
+
     void deleteByEmailAndPhoneNumber(
             String email,
             String phoneNumber
@@ -30,4 +34,6 @@ public interface PassengerRepository extends JpaRepository<PassengerEntity, Inte
     PassengerEntity getPassengerEntityByEmail(
             String passengerEmail
     );
+
+    void deleteByEmail(String email);
 }

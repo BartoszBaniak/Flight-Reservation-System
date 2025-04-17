@@ -39,10 +39,4 @@ public class ReservationController {
         return ResponseEntity.ok(reservationService.deleteReservation(reservationIdentifierRequest));
     }
 
-    //TODO dodawanie rezerwacji done
-    //TODO modyfikacja rezerwacji - zmiana dnia wylotu?
-    //TODO anulowanie (usuwanie) rezerwacji
-    //TODO odczytywanie danych rezerwacji done
-    //TODO sprawdzenie czy wybrane miejsce nie zostało wcześniej zarezerwowane
-    //TODO po utworzeniu rezerwacji wysłanie EMAIL! z informacjami o rezerwacji - numer rezerwacji, numer lotu oraz data wylotu
 }

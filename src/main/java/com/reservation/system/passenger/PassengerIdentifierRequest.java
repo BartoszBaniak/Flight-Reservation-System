@@ -8,6 +8,6 @@ import lombok.Setter;
 public class PassengerIdentifierRequest {
 
     private String email;
-    private String phoneNumber;
+    //private String phoneNumber;
 
 }

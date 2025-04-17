@@ -39,12 +39,4 @@ public class PassengerController {
         return ResponseEntity.ok(passengerService.updatePassenger(passengerUpdateRequest));
     }
 
-
-
-
-    //TODO dodawanie pasażera (przy tworzeniu rezerwacji, walidacja po email czy już istnieje?) - jest ale oddzielne, nie przy tworzeniu rejestracji
-    //TODO modyfikacja pasażerów
-    //TODO anulowanie (usuwanie) pasażerów - jest
-    //TODO odczytywanie danych pasażera - jest dla pojedynczego i dla wszystkich
-
 }
