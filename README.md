@@ -13,7 +13,7 @@ cd Flight-Reservation-System
 
 mvn clean package -DskipTests
 
-4. Run the application with Docker:
+3. Run the application with Docker:
 
 docker-compose up --build
 
