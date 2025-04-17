@@ -4,7 +4,7 @@ A simple flight reservation system built with Spring Boot, PostgreSQL and Docker
 
 ## Instalation and Running
 
-1. Clothe the repository:
+1. Clone the repository:
 
 git clone https://github.com/BartoszBaniak/Flight-Reservation-System.git 
 cd Flight-Reservation-System
