@@ -22,7 +22,7 @@ public class ReservationEntity {
     private int reservationId;
 
     @Column(nullable = false, unique = true)
-    private Long reservationNumber; //to do random generator
+    private Long reservationNumber;
 
     @ManyToOne
     @JoinColumn(name = "flight_id", nullable = false)

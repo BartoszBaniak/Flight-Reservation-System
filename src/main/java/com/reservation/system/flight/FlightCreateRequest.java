@@ -17,8 +17,8 @@ public class FlightCreateRequest {
 
     private AirportDto flightDeparture;
     private AirportDto flightArrival;
-    private LocalTime flightDepartureTime; //hour:minute
-    private LocalTime flightArrivalTime; //hour:minute
+    private LocalTime flightDepartureTime;
+    private LocalTime flightArrivalTime;
     private LocalDate flightDate;
     private FlightType flightType;
     private int flightSeatsNumber;

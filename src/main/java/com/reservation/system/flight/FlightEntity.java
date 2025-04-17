@@ -34,18 +34,15 @@ public class FlightEntity {
     private AirportEntity flightArrival;
 
     @Column(nullable = false)
-    //@Pattern(regexp = "^(?:[01]\\d|2[0-3]):[0-5]\\d$", message = "Invalid time format. Use HH:mm in 24-hour format.")
-    private LocalTime flightDepartureTime; //hour:minute
+    private LocalTime flightDepartureTime;
 
     @Column(nullable = false)
-    //@Pattern(regexp = "^(?:[01]\\d|2[0-3]):[0-5]\\d$", message = "Invalid time format. Use HH:mm in 24-hour format.")
-    private LocalTime flightArrivalTime; //hour:minute
+    private LocalTime flightArrivalTime;
 
     @Column(nullable = false)
-    private String flightDuration; //hour:minute
+    private String flightDuration;
 
     @Column(nullable = false)
-    //@Pattern(regexp = "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$", message = "Invalid date format. Use yyyy-MM-dd.")
     private LocalDate flightDate;
 
     @ManyToOne(cascade = CascadeType.PERSIST)
