@@ -5,15 +5,18 @@ import com.reservation.system.exceptions.InternalBusinessException;
 import com.reservation.system.reservation.ReservationEntity;
 import com.reservation.system.seat.SeatEntity;
 import com.reservation.system.seat.SeatService;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
 @Service
+@Validated
 @AllArgsConstructor
 public class PassengerService {
 
@@ -28,7 +31,7 @@ public class PassengerService {
     private final SeatService seatService;
 
     @Transactional
-    public PassengerCreateResponse createPassenger(PassengerDto passengerRequestDto) {
+    public PassengerCreateResponse createPassenger(@Valid PassengerDto passengerRequestDto) {
         if(checkIfPassengerExists(passengerRequestDto)) {
             throw InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(PASSENGER_EXIST_MESSAGE).code(ErrorEnum.PASSENGER_EXIST.getErrorCode()).build();
         }
@@ -39,9 +42,8 @@ public class PassengerService {
 
     @Transactional
     public PassengerIdentifierResponse deletePassenger(PassengerIdentifierRequest passengerIdentifierRequest) {
-
-        searchForPassenger(passengerIdentifierRequest);
-        deleteAllPassengerReservations(passengerIdentifierRequest);
+        PassengerEntity passengerEntity = searchForPassenger(passengerIdentifierRequest);
+        deleteAllPassengerReservations(passengerEntity);
 
         return PassengerIdentifierResponse.builder().data(PASSENGER_DELETED_MESSAGE).warnings(List.of()).errors(List.of()).build();
     }
@@ -81,38 +83,43 @@ public class PassengerService {
                 .toList();
     }
 
-    public PassengerEntity getPassengerEntity(PassengerDto passengerDto) {
-        if(StringUtils.isEmpty(passengerDto.getEmail()) && StringUtils.isEmpty(passengerDto.getPhoneNumber())) {
+    public PassengerEntity searchForPassenger(PassengerDto passengerDto) {
+        PassengerEntity passengerEntity = passengerRepository.getPassengerEntityByEmail(passengerDto.getEmail());
+
+        if(passengerEntity == null) {
             throw InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(PASSENGER_NOT_FOUND_MESSAGE).code(ErrorEnum.PASSENGER_NOT_FOUND.getErrorCode()).build();
         }
 
-        return passengerRepository.getPassengerEntityByEmail(
-                passengerDto.getEmail()
-                );
+        return passengerEntity;
     }
 
+    public PassengerEntity searchForPassenger(PassengerIdentifierRequest passengerIdentifierRequest) {
+        PassengerEntity passengerEntity = passengerRepository.getPassengerEntityByEmail(passengerIdentifierRequest.getEmail());
 
-    public void searchForPassenger(PassengerDto passengerRequestDto) {
-        passengerRepository.findByEmailAndPhoneNumber(passengerRequestDto.getEmail(), passengerRequestDto.getPhoneNumber())
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(PASSENGER_NOT_FOUND_MESSAGE).code(ErrorEnum.PASSENGER_NOT_FOUND.getErrorCode()).build());
+        if(passengerEntity == null) {
+            throw InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(PASSENGER_NOT_FOUND_MESSAGE).code(ErrorEnum.PASSENGER_NOT_FOUND.getErrorCode()).build();
+        }
+
+        return passengerEntity;
     }
 
     public void savePassenger(PassengerEntity passengerEntity) {
         passengerRepository.save(passengerEntity);
     }
 
-    private void deleteAllPassengerReservations(PassengerIdentifierRequest passengerIdentifierRequest) {
-        List<ReservationEntity> reservationEntities = searchForPassenger(passengerIdentifierRequest).getReservations();
+    private void deleteAllPassengerReservations(PassengerEntity passengerEntity) {
+        List<ReservationEntity> reservationEntities = passengerEntity.getReservations();
 
-        for(ReservationEntity reservationEntity : reservationEntities) {
-            SeatEntity seatEntity = reservationEntity.getSeatEntity();
-            seatEntity.setAvailable(true);
-            seatService.saveSeat(seatEntity);
+        if(!reservationEntities.isEmpty()){
+            for(ReservationEntity reservationEntity : reservationEntities) {
+                SeatEntity seatEntity = reservationEntity.getSeatEntity();
+                seatEntity.setAvailable(true);
+                seatService.saveSeat(seatEntity);
+            }
         }
 
-        passengerRepository.deleteByEmail(
-                passengerIdentifierRequest.getEmail()
-        );
+        passengerRepository.deleteByEmail(passengerEntity.getEmail());
+
     }
 
     private void updatePassengerEntity(PassengerEntity existingPassenger, PassengerDto passengerRequestDto) {
@@ -128,16 +135,6 @@ public class PassengerService {
                 .email(passengerEntity.getEmail())
                 .phoneNumber(passengerEntity.getPhoneNumber())
                 .build();
-    }
-
-    private PassengerEntity searchForPassenger(PassengerIdentifierRequest passengerIdentifierRequest) {
-
-        return passengerRepository.findByEmail(passengerIdentifierRequest.getEmail())
-                .orElseThrow(() -> InternalBusinessException.builder()
-                        .type(HttpStatus.BAD_REQUEST)
-                        .message(PASSENGER_NOT_FOUND_MESSAGE)
-                        .code(ErrorEnum.PASSENGER_NOT_FOUND.getErrorCode())
-                        .build());
     }
 
     private boolean checkIfPassengerExists(PassengerDto passengerRequestDto) {

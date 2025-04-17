@@ -12,7 +12,7 @@ public interface ReservationRepository extends JpaRepository<ReservationEntity, 
     @Query("SELECT COALESCE(MAX(r.reservationNumber), 999L) FROM ReservationEntity r")
     Long findMaxReservationNumber();
 
-    Optional<ReservationEntity> findByReservationNumber(
+    ReservationEntity findByReservationNumber(
             long reservationNumber
     );
 

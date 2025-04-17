@@ -13,24 +13,6 @@ public interface PassengerRepository extends JpaRepository<PassengerEntity, Inte
             String phoneNumber
     );
 
-    Optional<PassengerEntity> findByEmailAndPhoneNumber(
-            String email,
-            String phoneNumber
-    );
-
-    Optional<PassengerEntity> findByEmail(
-            String email
-    );
-
-    void deleteByEmailAndPhoneNumber(
-            String email,
-            String phoneNumber
-    );
-
-    PassengerEntity getPassengerEntityByEmailAndPhoneNumber(
-            String passengerEmail,
-            String passengerPhoneNumber);
-
     PassengerEntity getPassengerEntityByEmail(
             String passengerEmail
     );

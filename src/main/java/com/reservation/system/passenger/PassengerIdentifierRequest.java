@@ -1,13 +1,13 @@
 package com.reservation.system.passenger;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
-@Setter
+@Builder
 public class PassengerIdentifierRequest {
 
     private String email;
-    //private String phoneNumber;
 
 }

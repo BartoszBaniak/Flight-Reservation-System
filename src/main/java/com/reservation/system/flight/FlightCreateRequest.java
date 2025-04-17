@@ -3,6 +3,7 @@ package com.reservation.system.flight;
 import com.reservation.system.airport.AirportDto;
 import com.reservation.system.dictionaries.flightType.FlightType;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -11,6 +12,7 @@ import java.time.LocalTime;
 
 @Getter
 @Setter
+@Builder
 public class FlightCreateRequest {
 
     private AirportDto flightDeparture;

@@ -3,6 +3,7 @@ package com.reservation.system.passenger;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/passenger")
 @AllArgsConstructor
+@Validated
 public class PassengerController {
 
     private final PassengerService passengerService;

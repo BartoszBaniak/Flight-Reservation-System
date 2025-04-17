@@ -1,7 +1,7 @@
 package com.reservation.system.flight;
 
 import com.reservation.system.airport.AirportDto;
-import com.reservation.system.airport.AirportEntity;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,6 +10,7 @@ import java.time.LocalTime;
 
 @Getter
 @Setter
+@Builder
 public class FlightIdentifierRequest {
 
     private AirportDto flightDeparture;

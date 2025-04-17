@@ -7,7 +7,7 @@ import java.util.Optional;
 
 public interface SeatRepository extends JpaRepository<SeatEntity, Integer> {
 
-    Optional<SeatEntity> findByFlightEntityAndSeatNumber(
+    SeatEntity findByFlightEntityAndSeatNumber(
             FlightEntity flightEntity,
             String seatNumber
     );

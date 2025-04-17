@@ -117,7 +117,7 @@ public class ReservationService {
     }
 
     private void updatePassengersDataInReservation(ReservationUpdateRequest reservationUpdateRequest) {
-        PassengerEntity passengerEntity = passengerService.getPassengerEntity(reservationUpdateRequest.getPassengerDto());
+        PassengerEntity passengerEntity = passengerService.searchForPassenger(reservationUpdateRequest.getPassengerDto());
 
         if(reservationUpdateRequest.getPassengerDto().getEmail().equals(passengerEntity.getEmail())) {
 
@@ -173,7 +173,7 @@ public class ReservationService {
         emailService.sendEmail(reservationCreateRequest.getPassengerDto().getEmail(), htmlContent, "Reservation Confirmation");
 
         return ReservationEntity.builder()
-                .passengerEntity(passengerService.getPassengerEntity(reservationCreateRequest.getPassengerDto()))
+                .passengerEntity(passengerService.searchForPassenger(reservationCreateRequest.getPassengerDto()))
                 .flightEntity(flightEntity)
                 .seatEntity(seatEntity)
                 .reservationNumber(reservationNumber)
@@ -182,16 +182,30 @@ public class ReservationService {
     }
 
     private ReservationEntity searchForReservation(ReservationIdentifierRequest reservationIdentifierRequest) {
-        return reservationRepository.findByReservationNumber(
-                reservationIdentifierRequest.getReservationNumber())
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(RESERVATION_NOT_FOUND_MESSAGE).code(ErrorEnum.RESERVATION_NOT_FOUND.getErrorCode()).build());
+        ReservationEntity reservationEntity = reservationRepository.findByReservationNumber(
+                reservationIdentifierRequest.getReservationNumber());
+        if (reservationEntity == null) {
+            throw InternalBusinessException.builder()
+                    .type(HttpStatus.BAD_REQUEST)
+                    .message(RESERVATION_NOT_FOUND_MESSAGE)
+                    .code(ErrorEnum.RESERVATION_NOT_FOUND.getErrorCode())
+                    .build();
+        }
+        return reservationEntity;
 
     }
 
     private ReservationEntity searchForReservation(ReservationUpdateRequest reservationUpdateRequest) {
-        return reservationRepository.findByReservationNumber(
-                reservationUpdateRequest.getReservationNumber())
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(RESERVATION_NOT_FOUND_MESSAGE).code(ErrorEnum.RESERVATION_NOT_FOUND.getErrorCode()).build());
+        ReservationEntity reservationEntity = reservationRepository.findByReservationNumber(
+                reservationUpdateRequest.getReservationNumber());
+        if (reservationEntity == null) {
+            throw InternalBusinessException.builder()
+                    .type(HttpStatus.BAD_REQUEST)
+                    .message(RESERVATION_NOT_FOUND_MESSAGE)
+                    .code(ErrorEnum.RESERVATION_NOT_FOUND.getErrorCode())
+                    .build();
+        }
+        return reservationEntity;
     }
 
 }

@@ -9,10 +9,10 @@ import java.util.Optional;
 @Repository
 public interface FlightConnectionRepository extends JpaRepository<FlightConnectionEntity, Integer> {
 
-    Optional<FlightConnectionEntity> findByDepartureAirportAndArrivalAirport(
+    FlightConnectionEntity findByDepartureAirportAndArrivalAirport(
             AirportEntity departureAirport,
             AirportEntity arrivalAirport
     );
 
-    Optional<FlightConnectionEntity> findTopByOrderByFlightNumberDesc();
+    FlightConnectionEntity findTopByOrderByFlightNumberDesc();
 }

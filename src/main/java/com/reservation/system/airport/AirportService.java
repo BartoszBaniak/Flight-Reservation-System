@@ -15,16 +15,27 @@ public class AirportService {
     private final AirportRepository airportRepository;
 
     public AirportEntity getAirportByCity(String airportCity) {
-        return airportRepository.findByAirportCity(airportCity)
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(AIRPORT_NOT_FOUND_MESSAGE).code(ErrorEnum.AIRPORT_NOT_FOUND.getErrorCode()).build());
+        AirportEntity airport = airportRepository.findByAirportCity(airportCity);
+        if (airport == null) {
+            throw InternalBusinessException.builder()
+                    .type(HttpStatus.BAD_REQUEST)
+                    .message(AIRPORT_NOT_FOUND_MESSAGE)
+                    .code(ErrorEnum.AIRPORT_NOT_FOUND.getErrorCode())
+                    .build();
+        }
+        return airport;
     }
 
     public AirportEntity getAirportEntityByCode(String airportCode) {
-        return airportRepository.findByAirportCode(airportCode)
-                .orElseThrow(() -> InternalBusinessException.builder()
-                        .type(HttpStatus.BAD_REQUEST)
-                        .message(AIRPORT_NOT_FOUND_MESSAGE)
-                        .code(1L).build());
+        AirportEntity airport = airportRepository.findByAirportCode(airportCode);
+        if (airport == null) {
+            throw InternalBusinessException.builder()
+                    .type(HttpStatus.BAD_REQUEST)
+                    .message(AIRPORT_NOT_FOUND_MESSAGE)
+                    .code(1L)
+                    .build();
+        }
+        return airport;
     }
 
     public AirportDto mapToAirportDto(AirportEntity airportEntity) {

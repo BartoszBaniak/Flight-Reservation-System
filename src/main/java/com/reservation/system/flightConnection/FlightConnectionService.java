@@ -13,42 +13,48 @@ public class FlightConnectionService {
     private final FlightConnectionRepository flightConnectionRepository;
 
     public FlightConnectionEntity createFlightConnection(AirportEntity flightDeparture, AirportEntity flightArrival) {
-        return flightConnectionRepository.findByDepartureAirportAndArrivalAirport(flightDeparture, flightArrival)
-                .orElseGet(() -> {
-                    String flightNumber = generateFlightNumber(flightDeparture, flightArrival);
 
-                    FlightConnectionEntity newConnection = FlightConnectionEntity.builder()
-                            .departureAirport(flightDeparture)
-                            .arrivalAirport(flightArrival)
-                            .flightNumber(flightNumber)
-                            .build();
+        FlightConnectionEntity existingConnection = flightConnectionRepository.findByDepartureAirportAndArrivalAirport(flightDeparture, flightArrival);
+        if (existingConnection != null) {
+            return existingConnection;
+        }
 
-                    return flightConnectionRepository.save(newConnection);
-                });
+        String flightNumber = generateFlightNumber(flightDeparture, flightArrival);
+
+        FlightConnectionEntity newConnection = FlightConnectionEntity.builder()
+                .departureAirport(flightDeparture)
+                .arrivalAirport(flightArrival)
+                .flightNumber(flightNumber)
+                .build();
+
+        return flightConnectionRepository.save(newConnection);
     }
 
     public String generateFlightNumber(AirportEntity flightDeparture, AirportEntity flightArrival) {
 
-        Optional<FlightConnectionEntity> existingConnection = flightConnectionRepository.findByDepartureAirportAndArrivalAirport(flightDeparture, flightArrival);
+        FlightConnectionEntity existingConnection = flightConnectionRepository.findByDepartureAirportAndArrivalAirport(flightDeparture, flightArrival);
 
-        if(existingConnection.isPresent()) {
-            return existingConnection.get().getFlightNumber();
+        if (existingConnection != null) {
+            return existingConnection.getFlightNumber();
         }
 
         int nextFlightNumber = getNextFlightNumber();
-
         return "LO" + nextFlightNumber;
 
     }
 
     private int getNextFlightNumber() {
 
-        Optional<FlightConnectionEntity> latestConnection = flightConnectionRepository.findTopByOrderByFlightNumberDesc();
+        FlightConnectionEntity latestConnection = flightConnectionRepository.findTopByOrderByFlightNumberDesc();
 
-        if(latestConnection.isPresent()) {
-            String latestFlightNumber = latestConnection.get().getFlightNumber();
-            return  Integer.parseInt(latestFlightNumber.substring(2)) + 1;
-
+        if (latestConnection != null && latestConnection.getFlightNumber() != null) {
+            String latestFlightNumber = latestConnection.getFlightNumber();
+            try {
+                int latestNumber = Integer.parseInt(latestFlightNumber.substring(2));
+                return latestNumber + 1;
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid flight number format: " + latestFlightNumber, e);
+            }
         } else {
             return 100;
         }

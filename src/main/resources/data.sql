@@ -1,8 +1,4 @@
-CREATE TABLE IF NOT EXISTS airports (
-                                        airport_id SERIAL PRIMARY KEY,
-                                        airport_code VARCHAR(10) UNIQUE NOT NULL,
-                                        airport_city VARCHAR(100) NOT NULL
-);
+CREATE DATABASE reservation_system;
 
 INSERT INTO airports (airport_code, airport_city) VALUES
                                                       ('LHR', 'Londyn'),

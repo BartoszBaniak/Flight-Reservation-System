@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -58,7 +59,7 @@ public class FlightService {
                         flightConnectionEntity.getDepartureAirport(),
                         flightConnectionEntity.getArrivalAirport(),
                         flightCreateRequest.getFlightDate(),
-                        flightCreateRequest.getFlightDepartureTime()).get());
+                        flightCreateRequest.getFlightDepartureTime()));
 
         seatService.saveAllSeats(seatEntities);
 
@@ -70,13 +71,7 @@ public class FlightService {
 
         FlightIdentifierRequest flightIdentifierRequest = flightUpdateRequest.getFlightUpdateRequestIdentifier();
         FlightUpdateRequestDto flightUpdateRequestDto = flightUpdateRequest.getFlightUpdateRequestDto();
-
-        FlightEntity existingFlight = flightRepository.findByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
-                        airportService.getAirportEntityByCode(flightIdentifierRequest.getFlightDeparture().getAirportCode()),
-                        airportService.getAirportEntityByCode(flightIdentifierRequest.getFlightArrival().getAirportCode()),
-                        flightIdentifierRequest.getFlightDate(),
-                        flightIdentifierRequest.getFlightDepartureTime())
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(ErrorEnum.FLIGHT_NOT_FOUND.getErrorCode()).build()); //todo przeniesc do private method
+        FlightEntity existingFlight = getFLightEntity(flightIdentifierRequest);
 
         seatService.deleteSeatsByFlight(existingFlight);
         seatService.refreshSeatsForFlight(existingFlight, flightUpdateRequestDto.getFlightSeatsNumber());
@@ -92,9 +87,9 @@ public class FlightService {
     @Transactional
     public FlightIdentifierResponse deleteFlight(FlightIdentifierRequest flightIdentifierRequest) {
 
-        seatService.deleteSeatsByFlight(searchForFlight(flightIdentifierRequest));
+        seatService.deleteSeatsByFlight(getFLightEntity(flightIdentifierRequest));
 
-        searchForFlight(flightIdentifierRequest);
+        getFLightEntity(flightIdentifierRequest);
         flightRepository.deleteByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
                 airportService.getAirportEntityByCode(flightIdentifierRequest.getFlightDeparture().getAirportCode()),
                 airportService.getAirportEntityByCode(flightIdentifierRequest.getFlightArrival().getAirportCode()),
@@ -108,7 +103,7 @@ public class FlightService {
 
     public FlightReadResponse getFlight(FlightIdentifierRequest flightIdentifierRequest) {
 
-        FlightEntity flightEntity = searchForFlight(flightIdentifierRequest);
+        FlightEntity flightEntity = getFLightEntity(flightIdentifierRequest);
         FlightDto flightDto = mapToFlightDto(flightEntity);
 
         return FlightReadResponse.builder()
@@ -134,23 +129,43 @@ public class FlightService {
         AirportEntity flightDeparture = airportService.getAirportByCity(reservationCreateRequest.getFlightDeparture());
         AirportEntity flightArrival = airportService.getAirportByCity(reservationCreateRequest.getFlightArrival());
 
-        return flightRepository.findByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
-                        flightDeparture,
-                        flightArrival,
-                        reservationCreateRequest.getFlightDate(),
-                        reservationCreateRequest.getFlightDepartureTime())
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(ErrorEnum.FLIGHT_NOT_FOUND.getErrorCode()).build());
+        FlightEntity flightEntity = flightRepository.findByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
+                flightDeparture,
+                flightArrival,
+                reservationCreateRequest.getFlightDate(),
+                reservationCreateRequest.getFlightDepartureTime());
 
+        if(flightEntity == null) {
+            throw InternalBusinessException.builder()
+                    .type(HttpStatus.BAD_REQUEST)
+                    .message(FLIGHT_NOT_FOUND_MESSAGE)
+                    .code(ErrorEnum.FLIGHT_NOT_FOUND.getErrorCode())
+                    .build();
+        }
+
+        return flightEntity;
     }
 
-    public FlightEntity searchForFlight(FlightIdentifierRequest flightIdentifierRequest) {
+    public FlightEntity getFLightEntity(FlightIdentifierRequest flightIdentifierRequest) {
 
-        return flightRepository.findByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
-                        airportService.getAirportEntityByCode(flightIdentifierRequest.getFlightDeparture().getAirportCode()),
-                        airportService.getAirportEntityByCode(flightIdentifierRequest.getFlightArrival().getAirportCode()),
-                        flightIdentifierRequest.getFlightDate(),
-                        flightIdentifierRequest.getFlightDepartureTime())
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(FLIGHT_NOT_FOUND_MESSAGE).code(ErrorEnum.FLIGHT_NOT_FOUND.getErrorCode()).build());
+        AirportEntity flightDeparture = airportService.getAirportByCity(flightIdentifierRequest.getFlightDeparture().getAirportCity());
+        AirportEntity flightArrival = airportService.getAirportByCity(flightIdentifierRequest.getFlightArrival().getAirportCity());
+
+        FlightEntity flightEntity = flightRepository.findByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
+                flightDeparture,
+                flightArrival,
+                flightIdentifierRequest.getFlightDate(),
+                flightIdentifierRequest.getFlightDepartureTime());
+
+        if(flightEntity == null) {
+            throw InternalBusinessException.builder()
+                    .type(HttpStatus.BAD_REQUEST)
+                    .message(FLIGHT_NOT_FOUND_MESSAGE)
+                    .code(ErrorEnum.FLIGHT_NOT_FOUND.getErrorCode())
+                    .build();
+        }
+
+        return flightEntity;
     }
 
     private FlightEntity createFlightEntity(FlightCreateRequest flightCreateRequest, String flightDuration, FlightConnectionEntity flightConnectionEntity) {
@@ -200,20 +215,20 @@ public class FlightService {
     }
 
     private boolean checkIfFlightExists(FlightCreateRequest flightCreateRequest) {
+        try {
+            FlightConnectionEntity flightConnection = flightConnectionService.createFlightConnection(
+                    airportService.getAirportEntityByCode(flightCreateRequest.getFlightDeparture().getAirportCode()),
+                    airportService.getAirportEntityByCode(flightCreateRequest.getFlightArrival().getAirportCode()));
 
-        FlightConnectionEntity flightConnection = flightConnectionService.createFlightConnection(
-                airportService.getAirportEntityByCode(flightCreateRequest.getFlightDeparture().getAirportCode()),
-                airportService.getAirportEntityByCode(flightCreateRequest.getFlightArrival().getAirportCode()));
-
-        if(flightConnection != null) {
             return flightRepository.existsByFlightConnectionAndFlightDateAndFlightDepartureTimeAndFlightArrivalTime(
                     flightConnection,
                     flightCreateRequest.getFlightDate(),
                     flightCreateRequest.getFlightDepartureTime(),
                     flightCreateRequest.getFlightArrivalTime());
-        }
 
-        return false;
+        } catch (InternalBusinessException e) {
+            return false;
+        }
     }
 
     private FlightDto mapToFlightDto(FlightEntity flightEntity) {
@@ -232,4 +247,30 @@ public class FlightService {
                 .build();
     }
 
+    @Transactional
+    public FlightIdentifierResponse updateFlightStatus(LocalTime flightDepartureTime, LocalDate flightDate, String departureAirportCode, String arrivalAirportCode, FlightStatus newStatus) {
+        AirportEntity departureAirport = airportService.getAirportEntityByCode(departureAirportCode);
+        AirportEntity arrivalAirport = airportService.getAirportEntityByCode(arrivalAirportCode);
+
+        FlightEntity existingFlight = flightRepository.findByFlightDepartureAndFlightArrivalAndFlightDateAndFlightDepartureTime(
+                departureAirport, arrivalAirport, flightDate, flightDepartureTime);
+
+        if (existingFlight == null) {
+            return FlightIdentifierResponse.builder()
+                    .data("Flight not found with the specified criteria")
+                    .warnings(List.of())
+                    .errors(List.of("Flight not found"))
+                    .build();
+        }
+
+        existingFlight.setFlightStatus(newStatus);
+
+        flightRepository.save(existingFlight);
+
+        return FlightIdentifierResponse.builder()
+                .data("Flight status updated successfully")
+                .warnings(List.of())
+                .errors(List.of())
+                .build();
+    }
 }

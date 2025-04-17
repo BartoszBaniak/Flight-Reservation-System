@@ -8,8 +8,8 @@ import java.util.Optional;
 @Repository
 public interface AirportRepository extends JpaRepository<AirportEntity, Integer> {
 
-    Optional<AirportEntity> findByAirportCode(String airportCode);
+    AirportEntity findByAirportCode(String airportCode);
 
-    Optional<AirportEntity> findByAirportCity(String airportCity);
+    AirportEntity findByAirportCity(String airportCity);
 
 }

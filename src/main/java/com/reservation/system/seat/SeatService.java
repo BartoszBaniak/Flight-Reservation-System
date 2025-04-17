@@ -30,8 +30,15 @@ public class SeatService {
 
     public SeatEntity getSeatEntity(FlightEntity flightEntity, String seatNumber) {
 
-        return seatRepository.findByFlightEntityAndSeatNumber(flightEntity, seatNumber)
-                .orElseThrow(() -> InternalBusinessException.builder().type(HttpStatus.BAD_REQUEST).message(SEAT_NOT_FOUND_MESSAGE).code(ErrorEnum.SEAT_NOT_FOUND.getErrorCode()).build());
+        SeatEntity seatEntity = seatRepository.findByFlightEntityAndSeatNumber(flightEntity, seatNumber);
+        if (seatEntity == null) {
+            throw InternalBusinessException.builder()
+                    .type(HttpStatus.BAD_REQUEST)
+                    .message(SEAT_NOT_FOUND_MESSAGE)
+                    .code(ErrorEnum.SEAT_NOT_FOUND.getErrorCode())
+                    .build();
+        }
+        return seatEntity;
     }
 
     public List<SeatEntity> generateAndGetAvailableSeats(int seatsNumber, FlightEntity flightEntity) {
