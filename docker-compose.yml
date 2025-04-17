@@ -5,7 +5,7 @@ services:
     image: postgres:15
     container_name: reservation_postgres
     environment:
-      POSTGRES_DB: reservation_system
+      POSTGRES_DB: reservation_test
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: baniak2002
     ports:

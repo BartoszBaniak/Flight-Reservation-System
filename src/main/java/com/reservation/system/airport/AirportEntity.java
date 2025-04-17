@@ -21,4 +21,10 @@ public class AirportEntity {
 
     @Column(nullable = false)
     private String airportCity;
+
+
+    public AirportEntity(String airportCode, String airportCity) {
+        this.airportCity = airportCity;
+        this.airportCode = airportCode;
+    }
 }

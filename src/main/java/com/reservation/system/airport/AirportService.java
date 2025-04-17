@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @AllArgsConstructor
 public class AirportService {
@@ -44,5 +46,11 @@ public class AirportService {
                 .airportCode(airportEntity.getAirportCode())
                 .build();
 
+    }
+
+    public List<AirportDto> getAllAirports() {
+        return airportRepository.findAll().stream()
+                .map(this::mapToAirportDto)
+                .toList();
     }
 }
